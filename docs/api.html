@@ -1,0 +1,640 @@
+<title>Pa'lante API</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+<style>
+  /* Dark-first: estas son las docs de una API, se leen en un editor a oscuras.
+     :root define la paleta oscura completa; light se redefine en los dos
+     estados que pueden pedirla. */
+  :root {
+    --ink: #0a1020;
+    --surface: #111b31;
+    --surface-2: #16223c;
+    --line: #24314f;
+    --line-soft: #1a2540;
+    --text: #e6ecf7;
+    --text-dim: #8fa0bf;
+    --text-faint: #64748f;
+    --gold: #f2a93c;
+    --gold-dim: #8a6224;
+    --teal: #4fb3a5;
+    --clay: #dd8a55;
+    --violet: #9d8cd8;
+    --shadow: 0 1px 0 rgba(255,255,255,.03) inset;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --ink: #f7f4ec;
+      --surface: #ffffff;
+      --surface-2: #f1ede2;
+      --line: #ded6c5;
+      --line-soft: #e9e2d4;
+      --text: #14203a;
+      --text-dim: #55617c;
+      --text-faint: #7d8699;
+      --gold: #9a6410;
+      --gold-dim: #d9b478;
+      --teal: #1f7a6d;
+      --clay: #a55420;
+      --violet: #5b49a0;
+      --shadow: none;
+    }
+  }
+  :root[data-theme="light"] {
+    --ink: #f7f4ec;
+    --surface: #ffffff;
+    --surface-2: #f1ede2;
+    --line: #ded6c5;
+    --line-soft: #e9e2d4;
+    --text: #14203a;
+    --text-dim: #55617c;
+    --text-faint: #7d8699;
+    --gold: #9a6410;
+    --gold-dim: #d9b478;
+    --teal: #1f7a6d;
+    --clay: #a55420;
+    --violet: #5b49a0;
+    --shadow: none;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ink);
+    color: var(--text);
+    font-family: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+    font-size: 15px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  code, pre, .mono { font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace; }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+
+  /* ---------- Cabecera ---------- */
+  header.top {
+    border-bottom: 1px solid var(--line);
+    background: color-mix(in srgb, var(--ink) 88%, transparent);
+    backdrop-filter: blur(12px);
+    position: sticky; top: 0; z-index: 20;
+  }
+  .top-in {
+    display: flex; align-items: baseline; gap: 14px;
+    padding: 14px 0;
+  }
+  .brand {
+    font-family: Archivo, system-ui, sans-serif;
+    font-weight: 700; font-size: 17px; letter-spacing: -.03em;
+  }
+  .brand b { color: var(--gold); font-weight: 700; }
+  .ver {
+    font-family: "IBM Plex Mono", monospace; font-size: 11px;
+    color: var(--text-faint); border: 1px solid var(--line);
+    padding: 2px 7px; border-radius: 4px;
+  }
+  .base {
+    margin-left: auto; font-family: "IBM Plex Mono", monospace;
+    font-size: 12px; color: var(--text-dim);
+  }
+
+  /* ---------- Hero ---------- */
+  .hero { padding: 72px 0 56px; border-bottom: 1px solid var(--line); }
+  .hero h1 {
+    font-family: Archivo, system-ui, sans-serif;
+    font-size: clamp(2.2rem, 5vw, 3.4rem);
+    line-height: 1.02; letter-spacing: -.04em; font-weight: 700;
+    margin: 0 0 18px; max-width: 16ch; text-wrap: balance;
+  }
+  .hero p { max-width: 62ch; color: var(--text-dim); font-size: 17px; margin: 0 0 28px; }
+  .hero .kicker {
+    font-family: "IBM Plex Mono", monospace; font-size: 11px;
+    letter-spacing: .16em; text-transform: uppercase;
+    color: var(--gold); margin: 0 0 20px;
+  }
+  .quickstart {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 10px; overflow: hidden; max-width: 720px;
+    box-shadow: var(--shadow);
+  }
+  .quickstart-h {
+    padding: 9px 14px; border-bottom: 1px solid var(--line-soft);
+    font-family: "IBM Plex Mono", monospace; font-size: 11px;
+    color: var(--text-faint); letter-spacing: .08em; text-transform: uppercase;
+  }
+  .quickstart pre { margin: 0; padding: 16px; }
+
+  /* ---------- Layout dos columnas ---------- */
+  .cols { display: grid; grid-template-columns: 1fr; gap: 0; }
+  @media (min-width: 1000px) {
+    .cols { grid-template-columns: 200px minmax(0,1fr); gap: 56px; align-items: start; }
+    nav.rail { position: sticky; top: 62px; padding: 48px 0; }
+  }
+  nav.rail { padding: 32px 0 0; }
+  nav.rail h4 {
+    font-family: "IBM Plex Mono", monospace; font-size: 10px;
+    letter-spacing: .16em; text-transform: uppercase; color: var(--text-faint);
+    margin: 0 0 10px; font-weight: 500;
+  }
+  nav.rail ul { list-style: none; margin: 0 0 26px; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+  nav.rail a {
+    color: var(--text-dim); text-decoration: none; font-size: 13.5px;
+    display: block; padding: 3px 0; border-left: 2px solid transparent; padding-left: 10px;
+    margin-left: -12px; transition: color .15s, border-color .15s;
+  }
+  nav.rail a:hover, nav.rail a:focus-visible { color: var(--gold); border-left-color: var(--gold); }
+
+  main { padding: 48px 0 96px; min-width: 0; }
+
+  section { scroll-margin-top: 72px; padding-bottom: 56px; }
+  section > h2 {
+    font-family: Archivo, system-ui, sans-serif;
+    font-size: 1.65rem; letter-spacing: -.025em; font-weight: 600;
+    margin: 0 0 6px; text-wrap: balance;
+  }
+  section > .lede { color: var(--text-dim); max-width: 64ch; margin: 0 0 26px; }
+  h3 { font-family: Archivo, sans-serif; font-size: 1.02rem; letter-spacing: -.01em; margin: 30px 0 8px; font-weight: 600; }
+  p { max-width: 66ch; }
+
+  /* ---------- Endpoint ---------- */
+  .ep { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); margin-bottom: 22px; overflow: hidden; }
+  .ep-h { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line-soft); flex-wrap: wrap; }
+  .verb {
+    font-family: "IBM Plex Mono", monospace; font-size: 11px; font-weight: 600;
+    letter-spacing: .06em; padding: 3px 7px; border-radius: 4px;
+    border: 1px solid currentColor;
+  }
+  .verb.get { color: var(--teal); }
+  .verb.post { color: var(--clay); }
+  .path { font-family: "IBM Plex Mono", monospace; font-size: 13.5px; font-weight: 500; }
+  .scope-tag {
+    margin-left: auto; font-family: "IBM Plex Mono", monospace; font-size: 11px;
+    color: var(--gold); background: color-mix(in srgb, var(--gold) 12%, transparent);
+    border: 1px solid var(--gold-dim); padding: 2px 8px; border-radius: 999px;
+  }
+  .ep-b { padding: 14px; }
+  .ep-b > p:first-child { margin-top: 0; }
+
+  /* ---------- Código ---------- */
+  pre {
+    background: var(--surface-2); border-radius: 8px; padding: 14px;
+    overflow-x: auto; font-size: 12.5px; line-height: 1.6; margin: 12px 0 0;
+    border: 1px solid var(--line-soft);
+  }
+  .ep-b pre { background: var(--surface-2); }
+  .tok-key { color: var(--gold); }
+  .tok-str { color: var(--teal); }
+  .tok-num { color: var(--violet); }
+  .tok-com { color: var(--text-faint); font-style: italic; }
+  .tok-fn  { color: var(--clay); }
+
+  /* ---------- Tablas ---------- */
+  .tw { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; margin: 16px 0; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; min-width: 480px; }
+  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+  th {
+    font-family: "IBM Plex Mono", monospace; font-size: 10.5px; font-weight: 500;
+    letter-spacing: .12em; text-transform: uppercase; color: var(--text-faint);
+    background: var(--surface);
+  }
+  tr:last-child td { border-bottom: none; }
+  td.mono { font-size: 12.5px; white-space: nowrap; }
+  td .desc { color: var(--text-dim); }
+
+  /* ---------- Anatomía de la métrica ---------- */
+  .anat { display: grid; gap: 12px; grid-template-columns: 1fr; margin: 20px 0 0; }
+  @media (min-width: 760px) { .anat { grid-template-columns: 1.1fr .9fr; } }
+  .anat-notes { display: flex; flex-direction: column; gap: 12px; }
+  .note { border-left: 2px solid var(--line); padding-left: 14px; }
+  .note b { display: block; font-family: "IBM Plex Mono", monospace; font-size: 12px; margin-bottom: 2px; }
+  .note.k-1 { border-left-color: var(--gold); } .note.k-1 b { color: var(--gold); }
+  .note.k-2 { border-left-color: var(--teal); } .note.k-2 b { color: var(--teal); }
+  .note.k-3 { border-left-color: var(--clay); } .note.k-3 b { color: var(--clay); }
+  .note.k-4 { border-left-color: var(--violet); } .note.k-4 b { color: var(--violet); }
+  .note span { color: var(--text-dim); font-size: 13.5px; }
+
+  /* ---------- Avisos ---------- */
+  .callout {
+    border: 1px solid var(--gold-dim); border-radius: 10px; padding: 14px 16px;
+    background: color-mix(in srgb, var(--gold) 7%, transparent); margin: 20px 0;
+  }
+  .callout b { color: var(--gold); }
+  .callout p { margin: 4px 0 0; color: var(--text-dim); }
+
+  ul.plain { color: var(--text-dim); max-width: 66ch; padding-left: 18px; }
+  ul.plain li { margin: 6px 0; }
+
+  footer { border-top: 1px solid var(--line); padding: 28px 0 48px; color: var(--text-faint); font-size: 13px; }
+
+  a { color: var(--gold); }
+  :focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; border-radius: 3px; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<header class="top">
+  <div class="wrap top-in">
+    <span class="brand">pa<b>'</b>lante</span>
+    <span class="ver">API v1</span>
+    <span class="base mono">https://pa-lante-web.vercel.app</span>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="hero">
+    <p class="kicker">Infraestructura de datos financieros personales</p>
+    <h1>El contexto financiero de una persona, legible por máquinas.</h1>
+    <p>
+      Pa'lante extrae el contexto financiero desde bancos, entidades y documentos,
+      lo normaliza a un modelo único y lo entrega por HTTP y por MCP.
+      Cada cifra llega con su procedencia, su método de cálculo y su nivel de
+      confianza — nunca un número suelto.
+    </p>
+    <div class="quickstart">
+      <div class="quickstart-h">Primera llamada</div>
+      <pre><span class="tok-fn">curl</span> https://pa-lante-web.vercel.app/api/v1/perfil \
+  -H <span class="tok-str">"Authorization: Bearer palante_•••"</span></pre>
+    </div>
+  </div>
+</div>
+
+<div class="wrap cols">
+  <nav class="rail">
+    <h4>Empezar</h4>
+    <ul>
+      <li><a href="#auth">Autenticación</a></li>
+      <li><a href="#scopes">Scopes</a></li>
+      <li><a href="#metrica">Anatomía de una métrica</a></li>
+    </ul>
+    <h4>Recursos</h4>
+    <ul>
+      <li><a href="#perfil">Perfil</a></li>
+      <li><a href="#cobertura">Cobertura</a></li>
+      <li><a href="#hallazgos">Hallazgos</a></li>
+      <li><a href="#pruebas">Pruebas</a></li>
+      <li><a href="#exportar">Exportar</a></li>
+    </ul>
+    <h4>Referencia</h4>
+    <ul>
+      <li><a href="#errores">Errores</a></li>
+      <li><a href="#mcp">Servidor MCP</a></li>
+      <li><a href="#limites">Límites</a></li>
+    </ul>
+  </nav>
+
+  <main>
+    <section id="auth">
+      <h2>Autenticación</h2>
+      <p class="lede">
+        Bearer token sobre HTTPS. El token pertenece a una persona y se emite desde
+        su propia cuenta: no hay claves de aplicación ni acceso sin dueño.
+      </p>
+      <pre>Authorization: Bearer palante_a7Kd9mQ2xR4vB8nL3pW6</pre>
+      <p style="margin-top:18px">
+        El valor en claro se muestra una sola vez, al generarlo. En base de datos
+        vive únicamente su <code>sha256</code>. Cada llamada queda registrada con
+        su token, su recurso y su resultado, y el dueño puede revocarlo en
+        cualquier momento — la revocación es inmediata.
+      </p>
+      <div class="callout">
+        <b>Todo acceso deja rastro.</b>
+        <p>
+          No es telemetría: es la bitácora que la persona consulta para saber quién
+          leyó sus datos financieros y cuándo. Es lo que hace defendible mover esta
+          información.
+        </p>
+      </div>
+    </section>
+
+    <section id="scopes">
+      <h2>Scopes</h2>
+      <p class="lede">
+        Cada token declara qué puede leer. Un token sin scopes explícitos sería un
+        interruptor, no un permiso.
+      </p>
+      <div class="tw">
+        <table>
+          <thead><tr><th>Scope</th><th>Concede</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">perfil:leer</td><td class="desc">El perfil financiero agregado</td></tr>
+            <tr><td class="mono">cobertura:leer</td><td class="desc">Qué fuentes están conectadas y qué cubren</td></tr>
+            <tr><td class="mono">hallazgos:leer</td><td class="desc">Hallazgos individuales con su procedencia</td></tr>
+            <tr><td class="mono">prueba:generar</td><td class="desc">Vistas de divulgación para un tercero</td></tr>
+            <tr><td class="mono">exportar</td><td class="desc">La totalidad de los datos en crudo</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Un token al que le falta el scope recibe <code>403</code> con la cabecera
+        <code>WWW-Authenticate</code> indicando cuál necesita, para que el cliente
+        pueda pedirlo sin adivinar.
+      </p>
+    </section>
+
+    <section id="metrica">
+      <h2>Anatomía de una métrica</h2>
+      <p class="lede">
+        Es la decisión de diseño que define esta API. Ninguna cifra viaja sola:
+        cada una carga cómo se calculó y qué la respalda, para que un agente pueda
+        decidir cuánto confiar en ella.
+      </p>
+      <div class="anat">
+        <pre>{
+  <span class="tok-key">"valor"</span>: <span class="tok-num">3950000</span>,
+  <span class="tok-key">"unidad"</span>: <span class="tok-str">"COP"</span>,
+  <span class="tok-key">"confianza"</span>: <span class="tok-num">0.93</span>,
+  <span class="tok-key">"metodo"</span>: <span class="tok-str">"Mediana de ingresos
+     mensuales observados."</span>,
+  <span class="tok-key">"evidencia"</span>: [
+    {
+      <span class="tok-key">"id"</span>: <span class="tok-str">"tx-ingreso-2026-03"</span>,
+      <span class="tok-key">"fuente"</span>: <span class="tok-str">"gmail:Nequi"</span>,
+      <span class="tok-key">"procedencia"</span>: <span class="tok-str">"observado"</span>,
+      <span class="tok-key">"confianza"</span>: <span class="tok-num">0.94</span>
+    }
+  ]
+}</pre>
+        <div class="anat-notes">
+          <div class="note k-1"><b>valor + unidad</b><span>Nunca un número sin unidad. Los montos son pesos colombianos enteros.</span></div>
+          <div class="note k-2"><b>confianza</b><span>0 a 1. Promedio ponderado de la evidencia que sostiene la cifra.</span></div>
+          <div class="note k-3"><b>metodo</b><span>Cómo se calculó, en prosa. Si un agente cita la cifra, puede citar el método.</span></div>
+          <div class="note k-4"><b>evidencia</b><span>Referencias auditables dentro de Pa'lante. Nunca el documento ni la transacción cruda.</span></div>
+        </div>
+      </div>
+      <h3>Procedencia</h3>
+      <div class="tw">
+        <table>
+          <thead><tr><th>Valor</th><th>Significa</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">declarado</td><td class="desc">Lo dijo la persona</td></tr>
+            <tr><td class="mono">observado</td><td class="desc">Vino de una fuente o documento</td></tr>
+            <tr><td class="mono">estimado</td><td class="desc">Lo calculó el motor de análisis</td></tr>
+            <tr><td class="mono">confirmado</td><td class="desc">La persona lo revisó y lo dio por bueno</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">
+        <b>Las fuentes que se contradicen no se fusionan.</b>
+        <p>
+          Si la DIAN y un extracto reportan ingresos distintos, ambos hallazgos
+          sobreviven como filas separadas. Promediarlos destruiría justo la
+          información que necesitas para decidir a cuál creerle.
+        </p>
+      </div>
+    </section>
+
+    <section id="perfil">
+      <h2>Perfil</h2>
+      <p class="lede">
+        El contrato canónico. Es general por diseño: no contiene nada de ningún
+        caso de uso concreto, así que agregar uno nuevo nunca rompe a los
+        consumidores existentes.
+      </p>
+      <div class="ep">
+        <div class="ep-h">
+          <span class="verb get">GET</span>
+          <span class="path">/api/v1/perfil</span>
+          <span class="scope-tag">perfil:leer</span>
+        </div>
+        <div class="ep-b">
+          <p>Foto agregada del contexto financiero, calculada al vuelo.</p>
+          <pre>{
+  <span class="tok-key">"perfil"</span>: {
+    <span class="tok-key">"version"</span>: <span class="tok-str">"1.0"</span>,
+    <span class="tok-key">"periodo"</span>: { <span class="tok-key">"desde"</span>: <span class="tok-str">"2026-03-05"</span>, <span class="tok-key">"hasta"</span>: <span class="tok-str">"2026-08-25"</span>, <span class="tok-key">"mesesObservados"</span>: <span class="tok-num">6</span> },
+    <span class="tok-key">"ingresos"</span>:     { <span class="tok-key">"declarado"</span>, <span class="tok-key">"verificado"</span>, <span class="tok-key">"porcentajeVerificado"</span>, <span class="tok-key">"variacionMensual"</span> },
+    <span class="tok-key">"flujo"</span>:        { <span class="tok-key">"gastoMensualObservado"</span>, <span class="tok-key">"flujoLibreObservado"</span> },
+    <span class="tok-key">"obligaciones"</span>: { <span class="tok-key">"deudaTotal"</span>, <span class="tok-key">"cuotaMensual"</span>, <span class="tok-key">"cargaFinanciera"</span> },
+    <span class="tok-key">"patrimonio"</span>:   { <span class="tok-key">"total"</span>, <span class="tok-key">"porTipo"</span> },
+    <span class="tok-key">"cobertura"</span>:    { <span class="tok-key">"dominios"</span>, <span class="tok-key">"fuentesConectadas"</span>, <span class="tok-key">"porcentajeCubierto"</span> },
+    <span class="tok-key">"calidadDatos"</span>: { <span class="tok-key">"completitud"</span>, <span class="tok-key">"confianza"</span>, <span class="tok-key">"estadoPreparacion"</span>, <span class="tok-key">"datosFaltantes"</span>, <span class="tok-key">"advertencias"</span> }
+  }
+}
+
+<span class="tok-com">// Cada hoja bajo ingresos/flujo/obligaciones/patrimonio
+// es una métrica completa: valor, unidad, confianza, metodo, evidencia.</span></pre>
+        </div>
+      </div>
+      <div class="callout">
+        <b>Lee <code>calidadDatos</code> antes de concluir.</b>
+        <p>
+          <code>completitud</code> baja o <code>advertencias</code> no vacías
+          significan que el perfil no alcanza para lo que ibas a afirmar. Dilo en
+          vez de rellenar los huecos.
+        </p>
+      </div>
+    </section>
+
+    <section id="cobertura">
+      <h2>Cobertura</h2>
+      <p class="lede">
+        Qué tanto del contexto financiero está efectivamente capturado. Es la
+        métrica que decide si vale la pena confiar en el resto.
+      </p>
+      <div class="ep">
+        <div class="ep-h">
+          <span class="verb get">GET</span>
+          <span class="path">/api/v1/cobertura</span>
+          <span class="scope-tag">cobertura:leer</span>
+        </div>
+        <div class="ep-b">
+          <pre>{
+  <span class="tok-key">"cobertura"</span>: {
+    <span class="tok-key">"porcentajeCubierto"</span>: <span class="tok-num">27</span>,
+    <span class="tok-key">"fuentesConectadas"</span>: [<span class="tok-str">"DIAN"</span>, <span class="tok-str">"DataCrédito"</span>, <span class="tok-str">"WhatsApp"</span>],
+    <span class="tok-key">"dominios"</span>: [
+      { <span class="tok-key">"dominio"</span>: <span class="tok-str">"income"</span>, <span class="tok-key">"fuentes"</span>: [<span class="tok-str">"DIAN"</span>], <span class="tok-key">"hallazgos"</span>: <span class="tok-num">2</span>, <span class="tok-key">"confianzaMedia"</span>: <span class="tok-num">0.91</span> }
+    ]
+  },
+  <span class="tok-key">"calidad_datos"</span>: { <span class="tok-key">"completitud"</span>: <span class="tok-num">80</span>, <span class="tok-key">"estadoPreparacion"</span>: <span class="tok-str">"listo_para_compartir"</span> }
+}</pre>
+          <p style="margin-top:14px">
+            Los once dominios posibles son <code class="mono">income · liability ·
+            asset · property · vehicle · credit_report · pension · tax_profile ·
+            company · fine · account</code>.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="hallazgos">
+      <h2>Hallazgos</h2>
+      <p class="lede">
+        La capa cruda debajo del perfil. Cada hallazgo es lo que dijo una fuente,
+        sin fusionar ni resolver contradicciones.
+      </p>
+      <div class="ep">
+        <div class="ep-h">
+          <span class="verb get">GET</span>
+          <span class="path">/api/v1/hallazgos</span>
+          <span class="scope-tag">hallazgos:leer</span>
+        </div>
+        <div class="ep-b">
+          <div class="tw">
+            <table>
+              <thead><tr><th>Parámetro</th><th>Tipo</th><th>Descripción</th></tr></thead>
+              <tbody>
+                <tr><td class="mono">tipo</td><td class="mono">string</td><td class="desc">Filtra por dominio</td></tr>
+                <tr><td class="mono">fuente</td><td class="mono">string</td><td class="desc">Filtra por fuente</td></tr>
+                <tr><td class="mono">limite</td><td class="mono">int</td><td class="desc">1–200, por defecto 50</td></tr>
+                <tr><td class="mono">desplazamiento</td><td class="mono">int</td><td class="desc">Por defecto 0</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <pre><span class="tok-fn">curl</span> <span class="tok-str">"…/api/v1/hallazgos?tipo=income&amp;limite=20"</span> \
+  -H <span class="tok-str">"Authorization: Bearer palante_•••"</span>
+
+{
+  <span class="tok-key">"hallazgos"</span>: [ { <span class="tok-key">"id"</span>, <span class="tok-key">"tipo"</span>, <span class="tok-key">"fuente"</span>, <span class="tok-key">"procedencia"</span>, <span class="tok-key">"periodo"</span>, <span class="tok-key">"datos"</span>, <span class="tok-key">"confianza"</span> } ],
+  <span class="tok-key">"paginacion"</span>: { <span class="tok-key">"total"</span>: <span class="tok-num">63</span>, <span class="tok-key">"limite"</span>: <span class="tok-num">20</span>, <span class="tok-key">"desplazamiento"</span>: <span class="tok-num">0</span>, <span class="tok-key">"hay_mas"</span>: <span class="tok-num">true</span> }
+}</pre>
+        </div>
+      </div>
+    </section>
+
+    <section id="pruebas">
+      <h2>Pruebas de divulgación</h2>
+      <p class="lede">
+        Vistas mínimas derivadas del perfil, pensadas para entregar a un tercero
+        sin entregarle la vida financiera completa de la persona.
+      </p>
+      <div class="ep">
+        <div class="ep-h">
+          <span class="verb post">POST</span>
+          <span class="path">/api/v1/pruebas/capacidad-pago</span>
+          <span class="scope-tag">prueba:generar</span>
+        </div>
+        <div class="ep-b">
+          <p>
+            Agregados verificables para evaluar un arriendo. No devuelve
+            transacciones, comercios, cuentas ni documentos.
+          </p>
+          <pre>{
+  <span class="tok-key">"prueba"</span>: {
+    <span class="tok-key">"proposito"</span>: <span class="tok-str">"evaluar_capacidad_arriendo"</span>,
+    <span class="tok-key">"ingresoMensualVerificado"</span>: <span class="tok-num">3950000</span>,
+    <span class="tok-key">"porcentajeIngresoVerificado"</span>: <span class="tok-num">94.0</span>,
+    <span class="tok-key">"variacionMensualIngreso"</span>: <span class="tok-num">6.2</span>,
+    <span class="tok-key">"cargaFinanciera"</span>: <span class="tok-num">18.4</span>,
+    <span class="tok-key">"relacionCanonIngreso"</span>: <span class="tok-num">32.9</span>,
+    <span class="tok-key">"estadoPreparacion"</span>: <span class="tok-str">"listo_para_compartir"</span>
+  },
+  <span class="tok-key">"limites"</span>: [<span class="tok-str">"No constituye aprobación ni recomendación crediticia."</span>]
+}</pre>
+        </div>
+      </div>
+      <div class="callout">
+        <b>Una prueba no aprueba nada.</b>
+        <p>
+          Entrega evidencia agregada; la entidad que recibe conserva sus propias
+          reglas de decisión y su responsabilidad sobre ellas.
+        </p>
+      </div>
+    </section>
+
+    <section id="exportar">
+      <h2>Exportar</h2>
+      <p class="lede">
+        Si los datos son de la persona, tiene que poder llevárselos enteros —
+        incluida la bitácora de quién los leyó.
+      </p>
+      <div class="ep">
+        <div class="ep-h">
+          <span class="verb get">GET</span>
+          <span class="path">/api/v1/exportar</span>
+          <span class="scope-tag">exportar</span>
+        </div>
+        <div class="ep-b">
+          <pre>{
+  <span class="tok-key">"formato"</span>: <span class="tok-str">"palante.export.v1"</span>,
+  <span class="tok-key">"exportado_en"</span>: <span class="tok-str">"2026-08-22T21:14:03.221Z"</span>,
+  <span class="tok-key">"datos"</span>: { <span class="tok-key">"transacciones"</span>: [], <span class="tok-key">"deudas"</span>: [], <span class="tok-key">"hallazgos_financieros"</span>: [], <span class="tok-key">"mcp_accesos"</span>: [] }
+}</pre>
+        </div>
+      </div>
+    </section>
+
+    <section id="errores">
+      <h2>Errores</h2>
+      <p class="lede">
+        Una sola forma para toda la API. Ramifica por <code>code</code>; muestra
+        <code>detail</code> a un humano.
+      </p>
+      <pre>{
+  <span class="tok-key">"error"</span>: {
+    <span class="tok-key">"code"</span>: <span class="tok-str">"forbidden"</span>,
+    <span class="tok-key">"detail"</span>: <span class="tok-str">"Este token no tiene el scope 'hallazgos:leer'. Genera uno que lo incluya."</span>,
+    <span class="tok-key">"scope_requerido"</span>: <span class="tok-str">"hallazgos:leer"</span>,
+    <span class="tok-key">"request_id"</span>: <span class="tok-str">"req_8f3a1c9b2e7d4a6f0b15"</span>
+  }
+}</pre>
+      <div class="tw">
+        <table>
+          <thead><tr><th>Code</th><th>HTTP</th><th>Cuándo</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">unauthorized</td><td class="mono">401</td><td class="desc">Token ausente, inválido, revocado o vencido</td></tr>
+            <tr><td class="mono">forbidden</td><td class="mono">403</td><td class="desc">Token válido sin el scope requerido</td></tr>
+            <tr><td class="mono">not_found</td><td class="mono">404</td><td class="desc">El recurso no existe</td></tr>
+            <tr><td class="mono">invalid_request</td><td class="mono">422</td><td class="desc">Parámetros mal formados</td></tr>
+            <tr><td class="mono">server_error</td><td class="mono">500</td><td class="desc">Falla nuestra</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Toda respuesta incluye <code>X-Request-Id</code>. Cítalo al reportar un
+        problema: es la llave para encontrar esa llamada exacta.
+      </p>
+    </section>
+
+    <section id="mcp">
+      <h2>Servidor MCP</h2>
+      <p class="lede">
+        La misma información, hablando Model Context Protocol, para agentes que no
+        van a escribir un cliente HTTP.
+      </p>
+      <pre><span class="tok-com">// Claude Code</span>
+<span class="tok-fn">claude</span> mcp add --transport http palante https://pa-lante-mcp.vercel.app/mcp \
+  --header <span class="tok-str">"Authorization: Bearer palante_•••"</span>
+
+<span class="tok-com">// Claude Desktop — autenticación: Ninguno, y el token como encabezado</span>
+{
+  <span class="tok-key">"mcpServers"</span>: {
+    <span class="tok-key">"palante"</span>: {
+      <span class="tok-key">"command"</span>: <span class="tok-str">"npx"</span>,
+      <span class="tok-key">"args"</span>: [<span class="tok-str">"-y"</span>, <span class="tok-str">"mcp-remote"</span>, <span class="tok-str">"https://pa-lante-mcp.vercel.app/mcp"</span>,
+               <span class="tok-str">"--header"</span>, <span class="tok-str">"Authorization: Bearer palante_•••"</span>]
+    }
+  }
+}</pre>
+      <div class="tw">
+        <table>
+          <thead><tr><th>Tool</th><th>Devuelve</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">obtener_perfil_financiero</td><td class="desc">El perfil canónico completo</td></tr>
+            <tr><td class="mono">obtener_prueba_capacidad_pago</td><td class="desc">La vista de divulgación de arriendo</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Transporte HTTP sin estado: cada petición trae su token y se atiende sola.</p>
+    </section>
+
+    <section id="limites">
+      <h2>Límites</h2>
+      <p class="lede">Lo que esta API deliberadamente no hace.</p>
+      <ul class="plain">
+        <li><b>No aconseja.</b> Entrega datos con su procedencia. El diagnóstico, el plan y la recomendación los construye quien consume — y responde por ellos.</li>
+        <li><b>No decide.</b> Ninguna respuesta aprueba, rechaza ni califica a una persona.</li>
+        <li><b>No expone crudo por defecto.</b> Documentos y transacciones originales quedan dentro; la evidencia viaja como referencia auditable.</li>
+        <li><b>Sin rate limiting todavía.</b> No está implementado. No construyas asumiendo que te vamos a frenar.</li>
+        <li><b>Sin webhooks.</b> El perfil se calcula al momento de pedirlo; hoy toca hacer polling.</li>
+      </ul>
+    </section>
+  </main>
+</div>
+
+<footer>
+  <div class="wrap">
+    Pa'lante API v1 · Descubrimiento en <code>GET /api/v1</code> · Los montos son pesos colombianos.
+  </div>
+</footer>
