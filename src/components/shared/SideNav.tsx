@@ -12,7 +12,7 @@ export function SideNav() {
         <Link
           key={link.href}
           href={link.href}
-          className="rounded-medium px-3 py-2 text-sm font-medium text-outline hover:bg-primary-container hover:text-primary"
+          className="rounded px-3 py-2 body-md text-on-surface-variant transition-colors duration-500 hover:bg-primary-container/15 hover:text-primary"
         >
           {link.label}
         </Link>

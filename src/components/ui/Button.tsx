@@ -10,11 +10,11 @@ export function Button({
   ...props
 }: ButtonProps) {
   const base =
-    "rounded-medium px-6 py-3 text-sm font-semibold tracking-[-0.01em] transition-colors";
+    "rounded px-6 py-3 label-md transition-colors duration-500 active:scale-[0.98] transition-transform";
   const variants = {
-    primary: "bg-primary text-primary-foreground hover:opacity-90",
+    primary: "bg-primary text-on-primary hover:bg-primary/90",
     secondary:
-      "border border-outline-variant text-primary hover:bg-primary-container",
+      "border-2 border-primary bg-transparent text-primary hover:bg-primary-container/10",
   };
 
   return (

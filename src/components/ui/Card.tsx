@@ -5,11 +5,13 @@ type CardProps = HTMLAttributes<HTMLDivElement> & {
 };
 
 export function Card({ elevated = false, className = "", ...props }: CardProps) {
-  const surface = elevated ? "bg-surface-container-lowest shadow-sm" : "bg-surface-container-low";
+  const surface = elevated
+    ? "bg-surface-container-lowest"
+    : "bg-surface-container-low";
 
   return (
     <div
-      className={`rounded-large border border-outline-variant p-6 ${surface} ${className}`}
+      className={`rounded border border-outline-variant/50 p-6 ${surface} ${className}`}
       {...props}
     />
   );

@@ -1,33 +1,33 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/Button";
+import { signIn } from "@/auth";
 import { Card } from "@/components/ui/Card";
+import { MascotFeedback } from "@/components/shared/MascotFeedback";
 
 export default function LoginPage() {
   return (
     <div className="flex flex-1 items-center justify-center bg-surface p-6">
-      <Card elevated className="w-full max-w-sm">
-        <h1 className="text-2xl font-bold tracking-[-0.02em] text-foreground">
-          Inicia sesión
-        </h1>
-        <form className="mt-6 flex flex-col gap-4">
-          <input
-            type="email"
-            placeholder="Correo"
-            className="rounded-medium border border-outline-variant bg-surface-container-lowest px-4 py-2 text-sm"
-          />
-          <input
-            type="password"
-            placeholder="Contraseña"
-            className="rounded-medium border border-outline-variant bg-surface-container-lowest px-4 py-2 text-sm"
-          />
-          <Button type="submit">Entrar</Button>
+      <Card elevated className="flex w-full max-w-sm flex-col items-center gap-4 text-center">
+        <MascotFeedback mood="cargando" size={72} housed />
+        <div>
+          <h1 className="headline-md text-on-surface">Inicia sesión</h1>
+          <p className="mt-1 body-md text-on-surface-variant">
+            Usamos tu cuenta de Google para leer, de forma segura y de solo
+            lectura, tus correos de notificación bancaria.
+          </p>
+        </div>
+        <form
+          action={async () => {
+            "use server";
+            await signIn("google", { redirectTo: "/journey" });
+          }}
+          className="w-full"
+        >
+          <button
+            type="submit"
+            className="w-full rounded bg-primary px-6 py-3 label-md text-on-primary transition-colors duration-500 hover:bg-primary/90 active:scale-[0.98]"
+          >
+            Iniciar sesión con Google
+          </button>
         </form>
-        <p className="mt-4 text-center text-sm text-outline">
-          ¿No tienes cuenta?{" "}
-          <Link href="/signup" className="font-semibold text-primary">
-            Regístrate
-          </Link>
-        </p>
       </Card>
     </div>
   );

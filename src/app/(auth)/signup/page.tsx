@@ -1,38 +1,34 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/Button";
+import { signIn } from "@/auth";
 import { Card } from "@/components/ui/Card";
+import { MascotFeedback } from "@/components/shared/MascotFeedback";
 
 export default function SignupPage() {
   return (
     <div className="flex flex-1 items-center justify-center bg-surface p-6">
-      <Card elevated className="w-full max-w-sm">
-        <h1 className="text-2xl font-bold tracking-[-0.02em] text-foreground">
-          Crea tu cuenta
-        </h1>
-        <form className="mt-6 flex flex-col gap-4">
-          <input
-            type="text"
-            placeholder="Nombre"
-            className="rounded-medium border border-outline-variant bg-surface-container-lowest px-4 py-2 text-sm"
-          />
-          <input
-            type="email"
-            placeholder="Correo"
-            className="rounded-medium border border-outline-variant bg-surface-container-lowest px-4 py-2 text-sm"
-          />
-          <input
-            type="password"
-            placeholder="Contraseña"
-            className="rounded-medium border border-outline-variant bg-surface-container-lowest px-4 py-2 text-sm"
-          />
-          <Button type="submit">Crear cuenta</Button>
+      <Card elevated className="flex w-full max-w-sm flex-col items-center gap-4 text-center">
+        <MascotFeedback mood="cargando" size={72} housed />
+        <div>
+          <h1 className="headline-md text-on-surface">Crea tu cuenta</h1>
+          <p className="mt-1 body-md text-on-surface-variant">
+            No hay contraseñas que recordar: tu cuenta de Google es tu cuenta
+            de Pa&apos;lante, con acceso de solo lectura a tus correos
+            bancarios.
+          </p>
+        </div>
+        <form
+          action={async () => {
+            "use server";
+            await signIn("google", { redirectTo: "/journey" });
+          }}
+          className="w-full"
+        >
+          <button
+            type="submit"
+            className="w-full rounded bg-primary px-6 py-3 label-md text-on-primary transition-colors duration-500 hover:bg-primary/90 active:scale-[0.98]"
+          >
+            Continuar con Google
+          </button>
         </form>
-        <p className="mt-4 text-center text-sm text-outline">
-          ¿Ya tienes cuenta?{" "}
-          <Link href="/login" className="font-semibold text-primary">
-            Inicia sesión
-          </Link>
-        </p>
       </Card>
     </div>
   );
