@@ -1,111 +1,299 @@
-# Proyecto: App Web con Next.js
+# Proyecto: Finanzas personales — web app + servidor MCP
 
-## Contexto
-Este repo es una app web nueva construida con Next.js. Este archivo resume las decisiones tomadas durante la planeación, para que cualquier sesión de Claude Code arranque con el contexto completo sin necesidad de re-explicar nada.
+Este archivo es la fuente de verdad del proyecto. Toda sesión de Claude Code debe leerlo completo antes de tocar cualquier archivo.
 
-## Objetivo del proyecto
+---
 
-Herramienta que orienta a cualquier persona en el seguimiento de sus objetivos financieros, generando un plan paso a paso lo más automatizado posible.
+## Los dos frentes
 
-**Problema:** el contexto financiero de una persona existe, pero está atrapado en correos de notificación bancaria y PDFs de extractos (muchos con clave). Nadie puede consultarlo de forma centralizada ni accionable.
+Este proyecto tiene **dos productos distintos que comparten el mismo modelo de datos**:
 
-**A quién sirve (sin excluir a ninguno, pero con un diagnóstico que decide la ruta):**
-- Persona endeudada que necesita salir de deudas
-- Persona que quiere organizar/entender sus finanzas desde cero (visibilidad)
-- Persona con flujo positivo que quiere definir una meta de ahorro / capacidad de inversión
+| Frente | Qué es | Quién lo usa |
+|--------|--------|--------------|
+| **Web app** (Next.js) | Interfaz donde el usuario conecta sus datos, ve su diagnóstico y sigue su plan financiero personalizado | El usuario final |
+| **Servidor MCP** | Expone el contexto financiero normalizado del usuario como herramientas consumibles por agentes de IA externos | Otros agentes, integraciones, demos del track Access |
 
-**Flujo general:**
-1. **Ingesta de contexto financiero** — dos fuentes posibles:
-   - Gmail (plan A, vía OAuth con scope restringido `gmail.readonly` o idealmente `gmail.metadata` filtrando por remitentes bancarios) → escaneo de transacciones desde correos de notificación.
-   - Carga manual de PDFs (extractos, con clave típicamente la cédula) como fallback/plan B.
-2. **Normalización** — correo/PDF crudo → transacción estructurada y categorizada (bancos como Bancolombia, Davivienda, Nequi, Daviplata tienen formatos distintos y descripciones "sucias", ej. `COMPRA PSE *DLO*RAPPI BOG`).
-3. **Diagnóstico (router con reglas explícitas, no "la IA decidió")** — con base en el estado financiero, se enruta a una de las tres rutas:
-   - Deuda de alto costo > 30% del ingreso mensual → *Salida de deudas* (priorizar mayor tasa)
-   - Flujo neto negativo o > 25% del gasto sin categorizar → *Visibilidad* (entender antes de planear)
-   - Flujo neto positivo y sin deuda cara → *Meta de ahorro / capacidad de inversión*
-4. **Plan paso a paso** con seguimiento automatizado:
-   - Diagnóstico + plan (motor principal)
-   - Recordatorios (derivados de los pasos con fecha del plan)
-   - Alertas de desvío (transacciones reales vs. aporte mensual planeado)
-   - Proyecciones (aritmética sobre flujo neto + supuestos)
-5. **Capa de acceso externo** — exponer el contexto financiero normalizado como API/MCP, para que otros agentes puedan consumirlo.
+Ambos frentes leen del mismo modelo de datos (Supabase). El MCP no tiene UI — solo expone tools con el contexto ya procesado.
 
-**Modelo de datos central (todo lo demás se deriva de esto):**
+---
+
+## Objetivo del producto
+
+Herramienta que convierte el contexto financiero disperso de una persona (correos bancarios, PDFs de extractos) en un **plan financiero personalizado, dinámico y con seguimiento automático**.
+
+**Problema central:** el contexto financiero de una persona existe, pero está atrapado en 200 correos y 12 PDFs con clave. Ningún sistema puede leerlo ni actuarlo.
+
+**A quién sirve:** cualquier persona, sin importar su situación. El diagnóstico decide automáticamente su ruta:
+- Persona endeudada → ruta *Salida de deudas*
+- Persona con flujo negativo o gasto sin categorizar → ruta *Visibilidad*
+- Persona con flujo positivo sin deuda cara → ruta *Meta de ahorro / capacidad de inversión*
+
+---
+
+## Flujo completo del producto
+
+### 1. Ingesta de contexto financiero
+
+Todas las fuentes corren en paralelo con `Promise.all()` — ninguna bloquea a la otra:
+
 ```
-Transaccion   { fecha, monto, tipo, comercio_raw, comercio_norm,
-                categoria, cuenta, fuente, confianza }
-
-Plan          { meta, aporte_mensual, pasos[], supuestos[],
-                fecha_objetivo }
+Promise.all([
+  consultarCIFIN(cedula),        // deudas, bancos activos, score
+  consultarBanrep(),             // tasas DTF, IBR, usura vigente
+  consultarDANE(ciudad),         // IPC local, canasta familiar
+  parsearGmail(token),           // notificaciones bancarias
+  parsearPDFs(archivos)          // extractos subidos manualmente
+])
 ```
 
-**Restricciones importantes:**
-- La herramienta es de **diagnóstico, organización y seguimiento** — NO de asesoría o recomendación de inversión (evita terreno regulado; ni el equipo ni la app son asesores licenciados).
-- No usar datos personales reales de nadie del equipo en demos en vivo; usar una cuenta semilla de prueba.
-- Contexto regulatorio (Colombia): el Decreto 0368 de 2026 estableció el Sistema de Finanzas Abiertas obligatorio desde abril 2026, con estándares técnicos de la SFC esperados hacia octubre 2026 y 12 meses adicionales para que las entidades habiliten el acceso. Esta herramienta busca ser un puente mientras esa infraestructura no existe.
-- Gmail es "plan A" pero no debe ser una dependencia dura: el parser de transacciones debe construirse y probarse contra archivos (fixtures) exportados manualmente, de forma que Gmail sea una fuente intercambiable con "cargar archivos", no un bloqueante.
+**Fuentes de datos por capa de consentimiento:**
+
+| Capa | Fuente | Qué obtienes | Fricción |
+|------|--------|-------------|---------|
+| Sin consentimiento | Banco República, DANE, SFC | Tasas, IPC, usura vigente | Ninguna |
+| Cédula + checkbox | CIFIN / DataCrédito API | Deudas, bancos activos, score, cuentas | Mínima |
+| Gmail OAuth | Notificaciones bancarias | Transacciones Nequi, Daviplata, PSE | 1 clic |
+| Belvo / Finerio OAuth | Bancos con API | Saldos, historial completo | OAuth por banco |
+| DIAN (opcional) | Renta declarada | Ingresos reales, patrimonio | Credenciales DIAN |
+
+**Regla de encadenamiento:** CIFIN se consulta primero con la cédula → devuelve qué bancos tiene el usuario → solo mostramos esos bancos en el OAuth de Belvo. El usuario nunca ve una lista de 50 bancos.
+
+**Qué se infiere sin preguntar:**
+- De la cédula: ciudad de nacimiento, rango de edad
+- De los patrones de transacción: empleado formal vs. independiente
+- De los comercios: perfil de consumo
+- De la IP: ciudad actual → ajuste de IPC local
+
+### 2. Normalización
+
+```
+Correo/PDF crudo → Parser → Transaccion estructurada
+Ejemplo: "COMPRA PSE *DLO*RAPPI BOG 23,500" →
+{ comercio_norm: "Rappi", categoria: "Alimentación", confianza: 0.92 }
+```
+
+El parser se construye y prueba contra fixtures locales (`/fixtures/`), no contra Gmail en vivo. Gmail es una fuente intercambiable, no una dependencia.
+
+### 3. Diagnóstico (router con reglas explícitas)
+
+```
+IF deuda_alto_costo > 30% ingreso_mensual  → RUTA: salida_deudas
+ELSE IF flujo_neto < 0 OR sin_categorizar > 25%  → RUTA: visibilidad
+ELSE  → RUTA: meta_ahorro
+```
+
+Los umbrales están escritos en código visible, no "la IA decidió".
+
+### 4. Generación del plan (motor IA)
+
+**El plan NO es un roadmap lineal. Es un árbol de carriles paralelos no bloqueantes.**
+
+El número de carriles, la profundidad de cada uno y las tareas específicas son generados por el modelo a partir del contexto real. No hay plantillas fijas. Si alguien tiene 5 deudas, puede tener 7 carriles. Si no tiene deudas, puede tener 2. El modelo genera exactamente lo que el dolor del usuario justifica.
+
+**Señales que generan carriles (ejemplos, no lista cerrada):**
+- Deuda con tasa > 20% E.A. → carril "Salida [banco] $X"
+- Flujo neto negativo → carril "Reducir gasto"
+- Sin fondo de emergencia → carril "Fondo emergencia"
+- Suscripciones sin uso detectadas → carril "Cancelar suscripciones" con las N tareas concretas
+- Score crediticio + tasa alta → carril "Conseguir tarjeta con menor tasa"
+- Ingreso nuevo detectado en Gmail → nuevo carril de oportunidad generado dinámicamente
+
+**Tipos de carril:**
+- `secuencial` — los pasos se desbloquean uno a uno dentro del carril
+- `paralelo` — corre simultáneamente con otros carriles, no los bloquea
+- `en_espera` — el carril está activo pero aguardando algo externo (ej. aprobación de tarjeta)
+- `siempre_activo` — tareas sin orden, el usuario las ataca cuando puede
+
+**Pasos auto-detectables:** cuando el sistema detecta la transacción en Gmail o vía Belvo, marca el paso solo. El usuario no tiene que volver a la app a confirmar nada.
+
+### 5. Seguimiento (vistas derivadas del mismo modelo)
+
+Las tres vistas no son módulos separados — son queries sobre `Transaccion` + `NodoPlan`:
+- **Recordatorios** → `NodoPlan.pasos[]` con fecha
+- **Alertas de desvío** → `Transaccion` real vs. `NodoPlan.aporte_mensual`
+- **Proyecciones** → aritmética sobre flujo neto + supuestos del plan
+
+---
+
+## Modelo de datos
+
+### Transaccion
+
+```typescript
+interface Transaccion {
+  id: string
+  fecha: Date
+  monto: number                        // COP
+  tipo: 'INGRESO' | 'GASTO' | 'TRANSFERENCIA'
+  comercio_raw: string                 // descripción original
+  comercio_norm: string                // "Rappi"
+  categoria: string                    // "Alimentación"
+  cuenta: string                       // "Nequi", "Falabella"
+  fuente: 'gmail' | 'pdf' | 'belvo'
+  confianza: number                    // 0.0 – 1.0
+  usuario_id: string
+  created_at: Date
+}
+```
+
+### NodoPlan (árbol del plan)
+
+```typescript
+interface NodoPlan {
+  id: string
+  usuario_id: string
+  titulo: string                       // específico: "Abonar $450K a Falabella el 15 sep"
+  tipo: 'accion' | 'consulta' | 'decision' | 'meta'
+  tipo_carril: 'secuencial' | 'paralelo' | 'en_espera' | 'siempre_activo'
+  urgencia: 1 | 2 | 3                 // 1 = crítico
+  estado: 'bloqueado' | 'activo' | 'en_progreso' | 'completado'
+  dependencias: string[]              // IDs de nodos que deben completarse antes
+  paralelos: string[]                 // IDs de nodos que corren al mismo tiempo
+  hijos: string[]                     // qué se desbloquea al completar este
+  auto_detectable: boolean            // ¿el sistema lo marca solo?
+  fuente_deteccion?: 'gmail' | 'belvo' | 'manual'
+  aporte_mensual?: number             // para alertas de desvío
+  fecha_objetivo?: Date
+  resultado?: unknown
+  created_at: Date
+  updated_at: Date
+}
+```
+
+### EstadoFinanciero (calculado, no persistido)
+
+```typescript
+interface EstadoFinanciero {
+  ingreso_mensual_promedio: number
+  gasto_mensual_promedio: number
+  deudas: { acreedor: string; monto: number; tasa: number; plazo?: number }[]
+  flujo_neto: number
+  gasto_por_categoria: Record<string, number>
+  gasto_sin_categorizar_pct: number
+  confianza_datos: number             // 0.0 – 1.0
+}
+```
+
+---
 
 ## Stack
 
-- **Framework:** Next.js (App Router, no Pages Router)
-- **Lenguaje:** TypeScript
-- **Estilos:** Tailwind CSS
-- **Linting:** ESLint
-- **Gestor de paquetes:** bun
-- **Auth:** Supabase Auth (`@supabase/ssr`) — Google OAuth + Magic Link, sesión en cookies httpOnly. Reemplazó a NextAuth v5.
+### Web app
 
-### Decisiones de auth (hackathon)
+| Capa | Tecnología |
+|------|-----------|
+| Framework | Next.js — App Router (no Pages Router) |
+| Lenguaje | TypeScript |
+| Estilos | Tailwind CSS |
+| Package manager | Bun |
+| Auth | Supabase Auth (`@supabase/ssr`) — Google OAuth + Magic Link |
+| Base de datos | Supabase (PostgreSQL + RLS) |
+| Linting | ESLint + Prettier |
 
-- Solo dos vías de entrada: **Google** y **enlace mágico por correo**. No hay registro, ni contraseñas, ni recuperación de clave — el login es también el signup.
-- El botón de Google pide `gmail.readonly` en el mismo consent. Supabase deja el token de Google en `session.provider_token` (ver `src/lib/supabase/session.ts`); **vive ~1h y no se refresca solo** — si expira, se reconecta desde `/intake`. Un usuario que entró por enlace mágico simplemente no tiene Gmail conectado.
-- Acceso abierto: cualquier correo puede entrar. El aislamiento de datos por usuario se hace con RLS en cualquier tabla que se agregue.
-- El `service_role key` nunca va al cliente ni a `.env.example`.
-- Rutas protegidas por `src/proxy.ts` (`/journey`, `/insights`, `/intake`); usa `getUser()`, no `getSession()`, porque valida el token contra Supabase.
+### Servidor MCP
 
-## Estructura de carpetas objetivo
+- Servidor independiente (Node.js / TypeScript)
+- Expone tools sobre el contexto financiero normalizado del usuario autenticado
+- Lee de Supabase con el `service_role` solo en el servidor, nunca en el cliente
+- Se monta como servidor MCP estándar consumible por Claude y otros agentes
+
+---
+
+## Auth (decisiones de hackathon)
+
+- Dos vías de entrada: **Google OAuth** y **enlace mágico por correo**. No hay registro con contraseña.
+- El botón de Google pide `gmail.readonly` en el mismo consent. El token de Google queda en `session.provider_token` (ver `src/lib/supabase/session.ts`). **Vive ~1h y no se refresca solo** — si expira, el usuario reconecta desde `/intake`.
+- Un usuario que entró por enlace mágico no tiene Gmail conectado; puede subir PDFs.
+- Aislamiento de datos por usuario con **RLS** en todas las tablas.
+- El `service_role key` nunca va al cliente ni al `.env.example`.
+- Rutas protegidas: `/journey`, `/insights`, `/intake` — middleware `src/proxy.ts` usa `getUser()`, no `getSession()`.
+
+---
+
+## Estructura de carpetas
 
 ```
-src/
-  app/              # rutas (App Router)
-    layout.tsx
-    page.tsx
-    globals.css
-  components/       # componentes reutilizables
-  lib/              # utilidades, helpers, clientes de API
-  types/            # tipos TypeScript compartidos
-public/             # assets estáticos
-.env.local          # variables de entorno (no se commitea)
-.env.example        # plantilla de variables de entorno
+/
+├── web/                        # Frente 1: Next.js app
+│   └── src/
+│       ├── app/                # rutas (App Router)
+│       ├── components/         # componentes reutilizables
+│       ├── lib/                # helpers, clientes de API, supabase
+│       └── types/              # tipos TypeScript compartidos
+│
+├── mcp/                        # Frente 2: servidor MCP
+│   └── src/
+│       ├── tools/              # cada tool del servidor MCP
+│       ├── lib/                # helpers compartidos con /web si aplica
+│       └── index.ts            # entry point del servidor
+│
+├── fixtures/                   # correos y PDFs de prueba (no datos reales)
+├── .env.local                  # variables de entorno (no se commitea)
+└── .env.example                # plantilla de variables
 ```
 
-## Convenciones e import alias
+> Si el repo tiene un solo `package.json` en la raíz (monorepo simple), ajustar rutas pero mantener la separación lógica `web/` vs `mcp/`.
 
-- Alias de imports: `@/*` apuntando a `src/*` (default de create-next-app)
+---
+
+## Import alias
+
+- `@/*` → `web/src/*` (web app)
+- `@mcp/*` → `mcp/src/*` (servidor MCP)
+
+---
+
+## UX — filosofía del plan
+
+- **No hay número fijo de carriles.** El plan se genera completamente desde el contexto del usuario. Una persona puede tener 2 carriles, otra 8.
+- **Los carriles son paralelos y no bloqueantes.** Si un carril está "en espera" (ej. aprobación de tarjeta), el usuario siempre tiene otros carriles activos donde avanzar.
+- **Los títulos son específicos, no genéricos.** "Abonar $450.000 a Falabella el 15 de septiembre" — no "pagar tu deuda".
+- **La detección automática reduce fricción.** Los pasos auto-detectables se marcan solos cuando el sistema detecta la transacción. El usuario no regresa a la app a confirmar.
+- **El plan vive y evoluciona.** Si aparece un ingreso nuevo detectado en Gmail, puede generarse un carril de oportunidad que antes no existía.
+- **Estilo Duolingo:** la mascota (La Hormiga Ahorradora) reacciona según el estado del usuario. Celebra logros, alerta sin culpar.
+
+---
+
+## Mascota
+
+**La Hormiga Ahorradora** — marrón cálido (`#c47a3a`), ojos grandes expresivos, estilo flat design, sosteniendo una moneda dorada. Cuatro estados: feliz/motivada, concentrada, alerta, satisfecha. Aparece en transiciones, celebraciones de hitos y alertas amigables.
+
+---
+
+## Restricciones importantes
+
+- La herramienta es de **diagnóstico, organización y seguimiento** — NOT de asesoría de inversión. No recomienda productos financieros específicos.
+- No usar datos personales reales del equipo en demos. Usar cuenta semilla de prueba.
+- **Gmail no es una dependencia dura.** El parser debe funcionar con fixtures locales. Gmail es una fuente intercambiable.
+- Contexto regulatorio Colombia: Decreto 0368 de 2026 estableció Finanzas Abiertas obligatorias. Estándares técnicos SFC esperados octubre 2026; entidades tienen 12 meses adicionales para implementar. Esta herramienta construye el puente mientras tanto.
+
+---
 
 ## Estado actual del proyecto
 
-- [x] Next.js inicializado (`create-next-app`) con TypeScript, ESLint, Tailwind, App Router y `src/`
-- [ ] Variables de entorno configuradas (`.env.example` creado; `.env.local` pendiente hasta que haya variables reales que definir)
-- [ ] Primer commit hecho (`chore: initial Next.js setup`)
-- [ ] README.md con instrucciones de instalación y scripts
-- [ ] Prettier configurado (formateo consistente junto a ESLint)
-- [ ] Husky + lint-staged (pre-commit hooks para lint/format)
+- [x] Next.js inicializado con TypeScript, ESLint, Tailwind, App Router y `src/`
+- [x] Supabase Auth configurado (Google OAuth + Magic Link)
+- [ ] `.env.local` configurado con variables reales
+- [ ] Primer commit limpio hecho
+- [ ] Prettier + Husky/lint-staged configurados
+- [x] Estructura de carpetas `web/` y `mcp/` creada (monorepo con workspaces de Bun, `mcp/` con un tool de ejemplo `get_transacciones`)
+- [ ] Parser: correo/PDF → `Transaccion` (testeado con fixtures)
+- [ ] `EstadoFinanciero` calculado desde transacciones
+- [ ] Router de diagnóstico (umbrales explícitos en código)
+- [ ] Motor de generación de plan (prompt → `NodoPlan[]`)
+- [ ] UI de carriles paralelos (web)
+- [ ] Servidor MCP con tools sobre el contexto normalizado
+- [ ] Gmail OAuth en vivo como fuente intercambiable
+- [ ] Integración Belvo/Finerio (opcional, post-MVP)
 
-## Próximos pasos sugeridos
-
-1. Confirmar si falta inicializar Next.js o si ya está hecho.
-2. Configurar Prettier y Husky/lint-staged si no existen.
-3. Construir el parser: correo/PDF → `Transaccion` estructurada y categorizada (probado contra fixtures locales, no contra Gmail en vivo).
-4. Construir `EstadoFinanciero` (ingresos, gastos por categoría, deudas, flujo neto) a partir de las transacciones.
-5. Implementar el router de diagnóstico (reglas explícitas y visibles, no hardcodeadas "a ciegas") y el generador de `Plan`.
-6. Derivar las 3 vistas (recordatorios, alertas de desvío, proyecciones) del mismo modelo de datos — no como módulos separados.
-7. Integrar Gmail OAuth en vivo (scope restringido) como fuente intercambiable con la carga de archivos.
-8. Exponer el contexto financiero normalizado como API/MCP (capa de acceso externo).
-9. Definir si el proyecto necesita base de datos, autenticación u otros servicios externos, y documentarlo aquí una vez decidido.
+---
 
 ## Notas para Claude Code
 
-- Seguir la estructura de carpetas anterior al crear nuevos archivos.
-- Mantener el código en TypeScript, usando Tailwind para estilos.
-- Actualizar este archivo (`CLAUDE.md`) cuando se tomen nuevas decisiones de arquitectura o stack, para que quede como fuente de verdad del proyecto.
-
+- Mantener TypeScript estricto. Sin `any` sin justificación.
+- Estilos solo con Tailwind. Sin CSS inline salvo casos muy específicos.
+- Antes de crear un archivo nuevo, verificar que no exista ya en la estructura.
+- El `CLAUDE.md` es la fuente de verdad. Si se toma una decisión de arquitectura, actualizarlo antes de seguir.
+- Los fixtures van en `/fixtures/` — nunca datos reales del equipo.
+- El servidor MCP y la web app son productos distintos pero comparten el modelo de datos. No mezclar sus entry points.
+- `service_role` solo en el servidor MCP y en funciones de servidor de Next.js. Nunca en componentes cliente.
