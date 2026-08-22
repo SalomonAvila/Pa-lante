@@ -1,23 +1,21 @@
 -- Datos de la cuenta semilla de prueba (ficticios; PRODUCT.md prohíbe usar
 -- datos reales del equipo en demos).
 --
--- Uso:
---   1. Reemplaza el correo de abajo por el de la cuenta semilla del equipo.
---      TIENE que ser un buzón real: el login es por enlace mágico o Google, así
---      que un dominio inventado nunca podría entrar y el usuario jamás se
---      crearía en auth.users. Truco barato: un alias con '+' sobre el correo
---      que ya usan (ej. equipo+semilla@gmail.com) llega al mismo buzón pero
---      Supabase lo trata como usuario distinto.
---   2. Entra UNA vez a la app con ese correo, por enlace mágico (no por
---      Google: así la cuenta de demo nunca toca un Gmail real, que es
+-- Cuenta semilla del equipo: palante.platanus@gmail.com
+--
+--   1. Entra UNA vez a la app con ese correo, por enlace mágico (no por
+--      Google: así la cuenta de demo nunca lee un Gmail real, que es
 --      justamente lo que PRODUCT.md prohíbe mostrar en vivo).
---   3. Corre este archivo en el SQL Editor de Supabase.
+--   2. Corre este archivo en el SQL Editor de Supabase.
+--
+-- Es idempotente: borra las transacciones y deudas de esta cuenta antes de
+-- insertar, así que se puede correr las veces que haga falta.
 
 do $$
 declare
   v_user_id uuid;
 begin
-  select id into v_user_id from auth.users where email = 'semilla@palante.test';
+  select id into v_user_id from auth.users where email = 'palante.platanus@gmail.com';
 
   if v_user_id is null then
     raise exception 'No existe el usuario semilla. Entra primero a la app con ese correo.';
