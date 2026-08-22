@@ -276,7 +276,7 @@ interface EstadoFinanciero {
 - [ ] `.env.local` configurado con variables reales
 - [ ] Primer commit limpio hecho
 - [ ] Prettier + Husky/lint-staged configurados
-- [x] Estructura de carpetas `web/` y `mcp/` creada (monorepo con workspaces de Bun, `mcp/` con un tool de ejemplo `get_transacciones`)
+- [ ] Estructura de carpetas `web/` y `mcp/` creada (monorepo con workspaces de Bun, `mcp/` con un tool de ejemplo `get_transacciones`)
 - [ ] Parser: correo/PDF → `Transaccion` (testeado con fixtures)
 - [ ] `EstadoFinanciero` calculado desde transacciones
 - [ ] Router de diagnóstico (umbrales explícitos en código)
