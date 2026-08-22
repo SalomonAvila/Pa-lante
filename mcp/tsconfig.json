@@ -10,6 +10,9 @@
     "skipLibCheck": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
+    // baseUrl explícito: sin él, los bundlers (esbuild en Vercel) no resuelven
+    // los alias de "paths" aunque TypeScript sí lo haga.
+    "baseUrl": ".",
     "paths": {
       "@mcp/*": ["./src/*"],
       // El modelo de datos vive en web/ y NO se duplica acá: si los tipos se
