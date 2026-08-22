@@ -15,7 +15,7 @@ const CENTER_X = 100;
 const STATUS_FILL: Record<ProgressStep["status"], string> = {
   done: "var(--color-primary)",
   current: "var(--color-primary)",
-  upcoming: "var(--color-surface-container-high)",
+  upcoming: "var(--color-primary-container)",
 };
 
 export function ProgressPath({ steps }: ProgressPathProps) {

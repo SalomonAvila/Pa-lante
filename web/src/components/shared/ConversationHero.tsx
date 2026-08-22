@@ -7,8 +7,8 @@ import { MascotFeedback } from "@/components/shared/MascotFeedback";
 function AntBubble({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex items-end gap-2">
-      <MascotFeedback mood="cargando" size={36} housed />
-      <div className="max-w-[85%] rounded-lg rounded-bl-none bg-surface-container-low px-4 py-3 body-md text-on-surface">
+      <MascotFeedback mood="cargando" size={36} />
+      <div className="max-w-[85%] rounded-2xl rounded-bl-md bg-surface-container-low px-4 py-3 body-md text-on-surface">
         {children}
       </div>
     </div>
@@ -18,7 +18,7 @@ function AntBubble({ children }: { children: React.ReactNode }) {
 function VisitorBubble({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex justify-end">
-      <div className="max-w-[85%] rounded-lg rounded-br-none bg-primary px-4 py-3 body-md text-on-primary">
+      <div className="max-w-[85%] rounded-2xl rounded-br-md bg-inverse-surface px-4 py-3 body-md text-inverse-on-surface">
         {children}
       </div>
     </div>

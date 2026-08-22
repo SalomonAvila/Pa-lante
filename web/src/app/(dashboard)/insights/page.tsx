@@ -49,7 +49,7 @@ export default function InsightsPage() {
       <RouteCard
         icon={DebtIcon}
         accentClassName="text-debt"
-        chipClassName="bg-primary-container/15"
+        chipClassName="bg-primary-container"
         tag="Ruta sugerida"
         title="Salida de deudas"
         description="Tu deuda de alto costo supera el 30% de tu ingreso mensual. Priorizamos pagar primero la de mayor tasa."

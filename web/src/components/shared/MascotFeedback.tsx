@@ -8,14 +8,15 @@ export type MascotMood =
   | "feliz" // Happy: resumen semanal
   | "satisfecha"; // Satisfied: meta cumplida
 
-// TODO: reemplazar cuando existan los assets en public/ (ver naming <accion-hormiga>.png)
+// Un solo asset de marca por ahora — el set de poses por estado (ver
+// naming <accion-hormiga>.png) todavía no existe en public/.
 const MOOD_TO_IMAGE: Record<MascotMood, string> = {
   cargando: "/hormiga-cargando-moneda.png",
-  ahorrando: "/hormiga-ahorrando.png",
-  alerta: "/hormiga-alertando.png",
-  pensando: "/hormiga-pensando.png",
-  feliz: "/hormiga-feliz.png",
-  satisfecha: "/hormiga-satisfecha.png",
+  ahorrando: "/hormiga-cargando-moneda.png",
+  alerta: "/hormiga-cargando-moneda.png",
+  pensando: "/hormiga-cargando-moneda.png",
+  feliz: "/hormiga-cargando-moneda.png",
+  satisfecha: "/hormiga-cargando-moneda.png",
 };
 
 const MOOD_TO_ALT: Record<MascotMood, string> = {
@@ -27,12 +28,12 @@ const MOOD_TO_ALT: Record<MascotMood, string> = {
   satisfecha: "Hormiga satisfecha por cumplir una meta",
 };
 
-// Housing: marco con tinte tonal a color del estado emocional, sin sombra.
+// Housing: marco de color sólido asociado al estado emocional, sin sombra.
 const MOOD_TO_HOUSING: Record<MascotMood, string> = {
-  cargando: "bg-primary-container/15",
-  ahorrando: "bg-tertiary-container/15",
+  cargando: "bg-primary-container",
+  ahorrando: "bg-tertiary-container",
   alerta: "bg-error-container",
-  pensando: "bg-secondary-container",
+  pensando: "bg-surface-container",
   feliz: "bg-mascot-happy/15",
   satisfecha: "bg-mascot-satisfied/15",
 };

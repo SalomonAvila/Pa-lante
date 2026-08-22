@@ -11,7 +11,7 @@ export function Card({ elevated = false, className = "", ...props }: CardProps) 
 
   return (
     <div
-      className={`rounded border border-outline-variant/50 p-6 ${surface} ${className}`}
+      className={`rounded-xl border border-outline-variant p-6 ${surface} ${className}`}
       {...props}
     />
   );

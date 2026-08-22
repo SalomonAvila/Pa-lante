@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { ConversationHero } from "@/components/shared/ConversationHero";
 
 const STEPS = [
@@ -21,6 +22,19 @@ const STEPS = [
 export default function Home() {
   return (
     <div className="flex flex-1 flex-col bg-surface">
+      <header className="mx-auto flex w-full max-w-5xl items-center gap-2.5 px-6 pt-6">
+        <Image
+          src="/hormiga-cargando-moneda.png"
+          alt=""
+          width={40}
+          height={40}
+          className="shrink-0"
+        />
+        <span className="font-heading text-[22px] font-bold tracking-[-0.01em] text-on-surface">
+          pa&apos;lante
+        </span>
+      </header>
+
       <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-6 py-16 sm:py-24">
         <h1 className="sr-only">Pa&apos;lante</h1>
         <ConversationHero />
@@ -37,7 +51,7 @@ export default function Home() {
                 )}
               </div>
               <div className="pb-2">
-                <h3 className="font-semibold text-on-surface">
+                <h3 className="font-heading text-lg font-semibold text-on-surface">
                   {step.title}
                 </h3>
                 <p className="mt-1 body-md text-on-surface-variant">
