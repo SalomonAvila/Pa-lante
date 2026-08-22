@@ -1,5 +1,5 @@
-import { createHash, randomBytes } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
+import { hashTokenMcp } from "@web/lib/mcp/tokens.js";
 
 /**
  * ÚNICO punto del código que usa la clave secreta de Supabase.
@@ -24,22 +24,6 @@ function clienteServicio() {
  */
 export function clienteServicioMcp() {
   return clienteServicio();
-}
-
-const PREFIJO = "palante_";
-
-export function hashToken(token: string): string {
-  return createHash("sha256").update(token).digest("hex");
-}
-
-/** Genera un token nuevo. El valor en claro se muestra UNA sola vez. */
-export function generarToken() {
-  const token = PREFIJO + randomBytes(24).toString("base64url");
-  return {
-    token,
-    tokenHash: hashToken(token),
-    prefijo: token.slice(0, PREFIJO.length + 6),
-  };
 }
 
 export type ContextoMcp = {
@@ -73,7 +57,7 @@ export async function autenticar(
   const { data, error } = await supabase
     .from("mcp_tokens")
     .select("id, user_id, revocado_en")
-    .eq("token_hash", hashToken(token))
+    .eq("token_hash", hashTokenMcp(token))
     .is("revocado_en", null)
     .maybeSingle();
 
