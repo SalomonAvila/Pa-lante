@@ -62,6 +62,15 @@ Plan          { meta, aporte_mensual, pasos[], supuestos[],
 - El `service_role key` nunca va al cliente ni a `.env.example`.
 - Rutas protegidas por `src/proxy.ts` (`/journey`, `/insights`, `/intake`); usa `getUser()`, no `getSession()`, porque valida el token contra Supabase.
 
+### Capa MCP (acceso externo)
+
+- Endpoint: `src/app/api/mcp/route.ts` (`mcp-handler` + SDK oficial). Autenticación por **Bearer token propio**, no OAuth 2.1 — decisión de hackathon.
+- Los tokens se guardan **hasheados** (sha256) en `mcp_tokens`; el valor en claro se muestra una sola vez.
+- `src/lib/mcp/auth.ts` es el **único** archivo que usa `SUPABASE_SECRET_KEY`. Un agente llama sin sesión de navegador, así que no hay `auth.uid()` y RLS no aplica: toda consulta filtra explícitamente por `user_id`. RLS sigue cubriendo al cliente web.
+- Cada llamada se registra en `mcp_accesos` — es lo que permite mostrarle al usuario quién leyó su contexto y revocarlo.
+- Herramientas: `explicar_diagnostico` (lista). Pendientes: `obtener_contexto_financiero`, `buscar_transacciones`, `obtener_plan`, `simular_escenario`.
+- Con `MCP_DEMO_TOKEN` el servidor responde contra `src/lib/fixtures/estado-ejemplo.ts` sin tocar Postgres. **Quitar en producción.**
+
 ## Estructura de carpetas objetivo
 
 ```
@@ -102,6 +111,15 @@ public/             # assets estáticos
 7. Integrar Gmail OAuth en vivo (scope restringido) como fuente intercambiable con la carga de archivos.
 8. Exponer el contexto financiero normalizado como API/MCP (capa de acceso externo).
 9. Definir si el proyecto necesita base de datos, autenticación u otros servicios externos, y documentarlo aquí una vez decidido.
+
+## Contratos congelados (los tres frentes construyen contra esto)
+
+`Transaccion`, `Deuda`, `Plan` y `EstadoFinanciero` viven en `src/types/finance.ts`. `EstadoFinanciero` es el contrato entre la ingesta y el MCP: quien cambie la agregación no debe tocar ninguna herramienta MCP.
+
+Pendiente de confirmar con el equipo:
+- ¿"Deuda de alto costo > 30% del ingreso" se mide sobre la **cuota mensual** (asumido hoy en `src/lib/diagnostico/reglas.ts`) o sobre el **saldo**?
+- ¿De dónde sale `tasa_ea`? Los correos bancarios no la traen; probablemente la digita el usuario.
+- ¿Quién llena `hash_dedupe` y con qué algoritmo?
 
 ## Notas para Claude Code
 
