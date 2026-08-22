@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
-import type { EstadoFinanciero, Deuda } from "@/types/finance";
-import { ESTADO_EJEMPLO } from "@/lib/fixtures/estado-ejemplo";
-import type { ContextoMcp } from "@/lib/mcp/auth";
+import type { EstadoFinanciero, Deuda } from "@web/types/finance";
+import { ESTADO_EJEMPLO } from "@mcp/fixtures/estado-ejemplo";
+import type { ContextoMcp } from "@mcp/lib/auth";
 
 type FilaTransaccion = {
   fecha: string;
@@ -23,7 +23,7 @@ export async function obtenerEstado(ctx: ContextoMcp): Promise<EstadoFinanciero>
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SECRET_KEY!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { persistSession: false } },
   );
 

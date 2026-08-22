@@ -1,4 +1,4 @@
-import type { EstadoFinanciero } from "@/types/finance";
+import type { EstadoFinanciero } from "@web/types/finance";
 
 /**
  * Cuenta semilla de prueba. Datos completamente ficticios: PRODUCT.md prohíbe

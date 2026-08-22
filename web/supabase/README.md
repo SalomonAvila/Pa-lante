@@ -1,4 +1,7 @@
-# Base de datos y capa MCP
+# Base de datos
+
+El servidor MCP que consume estas tablas vive en `mcp/` (paquete aparte, ver
+`CLAUDE.MD` → Estructura de carpetas).
 
 ## Estructura
 
@@ -36,10 +39,14 @@ Todas con RLS: `auth.uid() = user_id`.
 ## Probar el MCP sin base de datos
 
 Con `MCP_DEMO_TOKEN` en `.env.local`, el servidor responde con el fixture de
-`src/lib/fixtures/estado-ejemplo.ts` sin tocar Postgres:
+`mcp/src/fixtures/estado-ejemplo.ts` sin tocar Postgres:
 
 ```bash
-curl -s -X POST http://localhost:3000/api/mcp \
+bun run mcp:dev
+```
+
+```bash
+curl -s -X POST http://localhost:3333/mcp \
   -H "Authorization: Bearer palante_demo_local" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
@@ -55,7 +62,7 @@ Sin token o con token inválido, el endpoint responde **401**.
   "mcpServers": {
     "palante": {
       "command": "npx",
-      "args": ["-y", "mcp-remote", "http://localhost:3000/api/mcp",
+      "args": ["-y", "mcp-remote", "http://localhost:3333/mcp",
                "--header", "Authorization: Bearer palante_demo_local"]
     }
   }

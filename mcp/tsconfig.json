@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022"],
+    "types": ["node"],
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "paths": {
+      "@mcp/*": ["./src/*"],
+      // El modelo de datos vive en web/ y NO se duplica acá: si los tipos se
+      // copiaran, los dos frentes derivarían y el contrato se rompería en
+      // silencio. web/src/types/finance.ts es la única fuente de verdad.
+      "@web/*": ["../web/src/*"]
+    }
+  },
+  "include": ["src/**/*.ts", "../web/src/types/**/*.ts"]
+}

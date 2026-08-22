@@ -1,4 +1,4 @@
-import type { EstadoFinanciero, Diagnostico, ReglaEvaluada } from "@/types/finance";
+import type { EstadoFinanciero, Diagnostico, ReglaEvaluada } from "@web/types/finance";
 
 /**
  * Router de diagnóstico: reglas EXPLÍCITAS y visibles (principio #1 del
