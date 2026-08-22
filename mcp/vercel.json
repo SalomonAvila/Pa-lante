@@ -1,5 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "api/mcp.ts": {
+      "runtime": "nodejs20.x"
+    }
+  },
   "rewrites": [
     { "source": "/mcp", "destination": "/api/mcp" }
   ]
