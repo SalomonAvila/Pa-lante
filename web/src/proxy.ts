@@ -1,7 +1,18 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-const RUTAS_PROTEGIDAS = ["/journey", "/insights", "/intake"];
+// "/registro" y "/registro/verificar-correo" quedan afuera a propósito: ahí
+// todavía no hay sesión (signUp sin confirmar / la página que la establece).
+const RUTAS_PROTEGIDAS = [
+  "/journey",
+  "/insights",
+  "/intake",
+  "/registro/verificar-identidad",
+  "/registro/autorizacion",
+  "/perfil",
+  "/panorama",
+  "/configuracion",
+];
 
 export default async function proxy(request: NextRequest) {
   // Esta respuesta se va mutando para propagar las cookies de sesión
@@ -52,5 +63,15 @@ export default async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/journey/:path*", "/insights/:path*", "/intake/:path*", "/login"],
+  matcher: [
+    "/journey/:path*",
+    "/insights/:path*",
+    "/intake/:path*",
+    "/login",
+    "/registro/verificar-identidad/:path*",
+    "/registro/autorizacion/:path*",
+    "/perfil/:path*",
+    "/panorama/:path*",
+    "/configuracion/:path*",
+  ],
 };

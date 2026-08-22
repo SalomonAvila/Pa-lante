@@ -208,7 +208,7 @@ interface EstadoFinanciero {
 
 - **Cuenta semilla para demos: `palante.platanus@gmail.com`.** Buzón creado para la hackathon, sin correo real dentro, así que se puede entrar por enlace mágico o por Google indistintamente. Sus datos financieros son ficticios y se cargan con `supabase/seed.sql`. Nunca demostrar con la cuenta personal de nadie del equipo.
 
-- Dos vías de entrada: **Google OAuth** y **enlace mágico por correo**. No hay registro con contraseña.
+- Tres vías de entrada: **Google OAuth**, **enlace mágico por correo**, y **registro con correo + contraseña** (`/registro`). El hashing de la contraseña lo resuelve Supabase Auth (`signUp` / `signInWithPassword`) — no hay hashing propio en el código. La verificación de correo tras el registro usa `verifyOtp({ type: "signup" })` con un código de 6 dígitos, no el enlace por defecto.
 - El botón de Google pide `gmail.readonly` en el mismo consent. El token de Google queda en `session.provider_token` (ver `src/lib/supabase/session.ts`). **Vive ~1h y no se refresca solo** — si expira, el usuario reconecta desde `/intake`.
 - Un usuario que entró por enlace mágico no tiene Gmail conectado; puede subir PDFs.
 - Aislamiento de datos por usuario con **RLS** en todas las tablas.
@@ -216,6 +216,18 @@ interface EstadoFinanciero {
 - Rutas protegidas: `/journey`, `/insights`, `/intake` — middleware `src/proxy.ts` usa `getUser()`, no `getSession()`.
 
 ---
+
+## Registro extendido, verificación de identidad y perfil financiero
+
+Además del flujo original (Gmail/PDF → `Transaccion` → diagnóstico → plan), la app tiene un segundo flujo de onboarding más profundo: `/registro` → `/registro/verificar-correo` → `/registro/verificar-identidad` → `/registro/autorizacion` → `/perfil/construyendo` → `/perfil/cuentas` → `/perfil/listo` → `/panorama`. Vive en paralelo al flujo de `/intake`, no lo reemplaza.
+
+**Identidad y consentimiento** — tablas nuevas (`supabase/migrations/20260822000002_perfil_financiero.sql`): `personas` (1:1 con `auth.users`), `empresas` (placeholder para persona jurídica, sin flujo completo todavía), `documentos_identidad` (cédula frontal/posterior, bucket privado `documentos`), `consentimientos` (append-only, 5 tipos separados — nunca un checkbox único). La verificación de identidad compara los datos escritos contra un "OCR" simulado (`web/src/lib/documentos/extractor.ts`) — no hay vendor de OCR real contratado.
+
+**Conectores de fuentes externas** — no existen credenciales ni convenios reales con DataCrédito, TransUnion, DIAN, Colpensiones, RUNT, SIMIT, RUES, etc. Cada fuente en `web/src/lib/conectores/catalogo.ts` es un guion simulado (`web/src/lib/conectores/guiones.ts`) con datos de fixture, igual que la cuenta semilla. **Toda fuente resuelve primero el ciclo de vida de cuenta** (¿ya tiene cuenta ahí? → registro con autofill + campo faltante, o recuperar contraseña, o login directo) antes de extraer datos — ver los estados en `web/src/lib/conectores/tipos.ts` (incluye `requires_password_recovery`, que no está en el spec original de estados). El avance ocurre **al leer** (`GET /api/perfil/conexiones/estado`), sin cola de jobs ni timers de servidor. Reemplazar una fuente simulada por automatización real o una API oficial es cambiar `catalogo.ts`/`guiones.ts`, no el resto de la app.
+
+**Normalización** — en vez de once tablas (`Income`, `Liability`, `Asset`...) hay una sola `hallazgos_financieros` con `tipo` discriminante (`TipoHallazgo` en `web/src/types/finance.ts`, junto a `Transaccion`/`Deuda`/`Plan`/`EstadoFinanciero`) y trazabilidad (`fuente`, `procedencia`, `confianza`, `periodo`). Un hallazgo nuevo nunca sobrescribe uno contradictorio de otra fuente — cada uno es su propia fila; `web/src/lib/perfil/normalizacion.ts` es quien agrega esto para el dashboard de `/panorama`, sin fundir cifras distintas en una sola.
+
+**Fuera de alcance, documentado a propósito, no implementado:** automatización real de portales, APIs oficiales de las entidades, reconocimiento facial/biométrico, OCR real, custodia de credenciales externas (vault), rate limiting, y listado de sesiones activas por usuario (se muestra solo la sesión actual en Configuración → Privacidad — enumerarlas todas necesita el Admin API de Supabase).
 
 ## Estructura de carpetas
 
@@ -297,7 +309,7 @@ interface EstadoFinanciero {
 
 ## Contratos congelados (los tres frentes construyen contra esto)
 
-`Transaccion`, `Deuda`, `Plan` y `EstadoFinanciero` viven en `src/types/finance.ts`. `EstadoFinanciero` es el contrato entre la ingesta y el MCP: quien cambie la agregación no debe tocar ninguna herramienta MCP.
+`Transaccion`, `Deuda`, `Plan`, `EstadoFinanciero`, y desde el perfil financiero extendido también `TipoHallazgo`/`ProcedenciaDato`/`HallazgoFinanciero`, viven en `src/types/finance.ts`. `EstadoFinanciero` es el contrato entre la ingesta y el MCP: quien cambie la agregación no debe tocar ninguna herramienta MCP.
 
 Pendiente de confirmar con el equipo:
 - ¿"Deuda de alto costo > 30% del ingreso" se mide sobre la **cuota mensual** (asumido hoy en `src/lib/diagnostico/reglas.ts`) o sobre el **saldo**?

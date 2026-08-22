@@ -45,6 +45,10 @@ Un diagnóstico transparente, no una caja negra: la ruta (deudas / visibilidad /
 - Sistema de diseño "Warm Financial Mentor": tipografía Inter, marrón cálido como color primario, superficies tonales sin sombras duras (capas + bordes suaves en vez de `box-shadow`), formas suavemente redondeadas, sin iconos-emoji (iconos propios de un solo trazo).
 - Legibilidad financiera sin miedo: los montos de deuda usan un tono tierra, no el rojo de error/alerta (ese rojo queda reservado para validación y alertas de sobregasto, no para mostrar cifras de deuda).
 
+## Identidad visual — flujo de registro y perfil financiero
+
+El flujo de registro/verificación de identidad/conectores/panorama (`/registro`, `/perfil/*`, `/panorama`, `/configuracion/privacidad`) pivota deliberadamente hacia una estética fintech seria — bordes contenidos, tablas densas en vez de burbujas para el progreso de fuentes, jerarquía numérica sin card-en-card, mascota solo en transiciones y estados vacíos, nunca en tablas o métricas. Es un pivote acotado a este flujo, no un rediseño de "Warm Financial Mentor" en `/journey` o `/insights`, que mantienen su identidad cálida y redondeada tal como está descrita arriba. Si el pivote termina extendiéndose al resto de la app, esta sección debe actualizarse para reflejarlo antes de tocar más pantallas.
+
 ## Evidence on Hand
 
 Ninguna todavía: no hay datos reales de usuarios, testimonios ni casos de estudio. Las demos deben usar una cuenta semilla de prueba (ver Capabilities and Constraints); nada de esto debe inventarse en trabajo futuro.

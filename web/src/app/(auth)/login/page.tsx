@@ -13,7 +13,7 @@ export default function LoginPage() {
         <div>
           <h1 className="headline-md text-on-surface">Entra a Pa&apos;lante</h1>
           <p className="mt-1 body-md text-on-surface-variant">
-            Sin contraseñas. Entra con Google o con un enlace a tu correo.
+            Con Google, con un enlace a tu correo, o con tu contraseña.
           </p>
         </div>
         <LoginForm />

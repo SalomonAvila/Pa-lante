@@ -60,3 +60,43 @@ export type Diagnostico = {
   reglas: ReglaEvaluada[];
   advertencias: string[];
 };
+
+/**
+ * Normalización genérica del perfil financiero extendido (DataCrédito, DIAN,
+ * Colpensiones, RUNT, extractos manuales...). En vez de una tabla por tipo
+ * (Income, Liability, Asset...) se usa un discriminante `tipo` + trazabilidad,
+ * igual que `EstadoFinanciero.calidadDatos` ya trackea confianza por fila.
+ */
+export type TipoHallazgo =
+  | "income"
+  | "liability"
+  | "asset"
+  | "property"
+  | "vehicle"
+  | "credit_report"
+  | "pension"
+  | "tax_profile"
+  | "company"
+  | "fine"
+  | "account";
+
+/**
+ * declarado = lo dijo el usuario; observado = vino de una fuente/documento;
+ * estimado = lo calculó el motor de análisis; confirmado = el usuario lo revisó.
+ */
+export type ProcedenciaDato = "declarado" | "observado" | "estimado" | "confirmado";
+
+/**
+ * Un hallazgo nunca se sobrescribe con datos contradictorios de otra fuente:
+ * cada fuente/periodo queda como fila propia (sección 18 del pedido).
+ */
+export type HallazgoFinanciero = {
+  id: string;
+  tipo: TipoHallazgo;
+  fuente: string;
+  procedencia: ProcedenciaDato;
+  periodo: string | null;
+  datos: Record<string, unknown>;
+  confianza: number;
+  creadoEn: string;
+};

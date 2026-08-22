@@ -3,6 +3,8 @@ import Link from "next/link";
 const LINKS = [
   { href: "/journey", label: "Mi camino" },
   { href: "/insights", label: "Diagnóstico" },
+  { href: "/panorama", label: "Panorama" },
+  { href: "/configuracion/privacidad", label: "Configuración" },
 ];
 
 export function SideNav() {
