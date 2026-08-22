@@ -192,7 +192,10 @@ interface EstadoFinanciero {
 
 ### Servidor MCP
 
-- Servidor independiente (Node.js / TypeScript), entry point `mcp/src/index.ts` — transporte HTTP con el SDK oficial.
+- Servidor independiente (Node.js / TypeScript) con dos entry points que comparten la misma lógica (`mcp/src/server.ts` construye el `McpServer`; solo cambia quién lo conecta al transporte):
+  - `mcp/src/index.ts` — desarrollo local: `http.Server` de toda la vida, escucha en `MCP_PORT` (default 3333), ruta `/mcp`.
+  - `mcp/api/mcp.ts` — **deploy en Vercel** (proyecto separado, Root Directory = `mcp/`): función serverless de Node. Vercel nunca ejecuta un `.listen()`, solo invoca funciones bajo `api/*.ts` por request — por eso el mismo servidor no puede desplegarse tal cual, necesita este wrapper. `mcp/vercel.json` reescribe `/mcp` → `/api/mcp` para que la URL pública sea igual a la de desarrollo local.
+  - El transporte (`StreamableHTTPServerTransport`) ya es *stateless por request* (`sessionIdGenerator: undefined`) en ambos casos — por diseño, no por necesidad de Vercel, pero es justo lo que una función serverless necesita (no hay proceso persistente entre requests que pueda guardar sesión).
 - Autenticación por **Bearer token propio**, no OAuth 2.1 (decisión de hackathon). Los tokens se guardan **hasheados** (sha256) en `mcp_tokens`; el valor en claro se muestra una sola vez.
 - `mcp/src/lib/auth.ts` es el **único** archivo que usa `SUPABASE_SERVICE_ROLE_KEY`. Un agente llama sin sesión de navegador, así que no hay `auth.uid()` y RLS no aplica: toda consulta filtra explícitamente por `user_id`. RLS sigue cubriendo al cliente web.
 - Cada llamada se registra en `mcp_accesos` — es lo que permite mostrarle al usuario quién leyó su contexto y revocarlo.

@@ -18,5 +18,5 @@
       "@web/*": ["../web/src/*"]
     }
   },
-  "include": ["src/**/*.ts", "../web/src/types/**/*.ts"]
+  "include": ["src/**/*.ts", "api/**/*.ts", "../web/src/types/**/*.ts"]
 }

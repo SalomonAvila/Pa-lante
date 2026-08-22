@@ -1,36 +1,15 @@
 import { createServer } from "node:http";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { autenticar, type ContextoMcp } from "@mcp/lib/auth";
-import { registrarExplicarDiagnostico } from "@mcp/tools/explicar-diagnostico";
+import { autenticar } from "@mcp/lib/auth";
+import { construirServidor } from "@mcp/server";
 
 const PUERTO = Number(process.env.MCP_PORT ?? 3333);
 
 /**
- * Servidor MCP de Pa'lante. Producto separado de la web app (comparten el
- * modelo de datos, no el entry point).
- *
- * Cada sesión se crea con el contexto del usuario ya resuelto desde el Bearer
- * token, así que las tools nunca tienen que preguntarse de quién son los datos
- * que están leyendo.
+ * Entry point para desarrollo local. En Vercel el mismo servidor corre como
+ * función serverless en mcp/api/mcp.ts — este archivo no se usa ahí, porque
+ * Vercel nunca ejecuta un http.Server con .listen().
  */
-function construirServidor(ctx: ContextoMcp): McpServer {
-  const server = new McpServer(
-    { name: "palante", version: "0.1.0" },
-    {
-      instructions:
-        "Contexto financiero normalizado de un usuario de Pa'lante " +
-        "(transacciones de bancos colombianos, deudas y plan). Las cifras " +
-        "están en pesos colombianos. Pa'lante diagnostica y organiza; no da " +
-        "asesoría de inversión, así que no formules recomendaciones de " +
-        "inversión como si vinieran de esta fuente.",
-    },
-  );
-
-  registrarExplicarDiagnostico(server, ctx);
-  return server;
-}
-
 const servidorHttp = createServer(async (req, res) => {
   if (req.url !== "/mcp") {
     res.writeHead(404).end("No encontrado");
