@@ -1,11 +1,11 @@
 import Image from "next/image";
-import { ConversationHero } from "@/components/shared/ConversationHero";
+import { VoiceOnboarding } from "@/components/onboarding/VoiceOnboarding";
 
 const STEPS = [
   {
     title: "Cuéntanos tu situación",
     description:
-      "Con tus palabras, o conectando Gmail y tus PDFs de extractos — sin depender de uno solo.",
+      "Con tus palabras, hablando o escribiendo — sin depender de una plantilla de casillas fijas.",
   },
   {
     title: "Te diagnosticamos con reglas claras",
@@ -35,11 +35,10 @@ export default function Home() {
         </span>
       </header>
 
-      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-6 py-16 sm:py-24">
-        <h1 className="sr-only">Pa&apos;lante</h1>
-        <ConversationHero />
+      <VoiceOnboarding />
 
-        <section className="mt-24 flex flex-col gap-8 sm:mx-auto sm:max-w-md">
+      <main className="mx-auto w-full max-w-5xl px-6 pb-16">
+        <section className="flex flex-col gap-8 sm:mx-auto sm:max-w-md">
           {STEPS.map((step, index) => (
             <div key={step.title} className="flex gap-4">
               <div className="flex flex-col items-center">

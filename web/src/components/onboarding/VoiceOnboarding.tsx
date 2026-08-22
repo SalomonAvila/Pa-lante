@@ -86,12 +86,12 @@ function OnboardingInner() {
             ? conversation.isSpeaking
               ? "Pa'lante está hablando…"
               : "Te escucho"
-            : "Cuéntale a Pa'lante qué está pasando"}
+            : "Antes de todo, conozcámonos"}
         </h1>
         <p className="mt-2 body-md text-on-surface-variant">
           {conectado
             ? "Habla o escribe abajo — lo que te resulte más fácil."
-            : "Por voz o por texto. Nada de formularios con casillas fijas."}
+            : "Con qué sueñas, qué meta financiera tienes en mente, cómo están tus finanzas hoy — en el orden que quieras, por voz o por texto."}
         </p>
       </div>
 
@@ -188,7 +188,7 @@ function OnboardingInner() {
       )}
 
       {!conectado && (
-        <Link href="/intake/clasico" className="label-md text-on-surface-variant underline">
+        <Link href="/intake" className="label-md text-on-surface-variant underline">
           Prefiero conectar directo, sin conversación
         </Link>
       )}
