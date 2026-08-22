@@ -192,7 +192,9 @@ interface EstadoFinanciero {
 
 ### Servidor MCP
 
-- Servidor independiente (Node.js / TypeScript), entry point `mcp/src/index.ts` — transporte HTTP con el SDK oficial.
+- Servidor independiente (Node.js / TypeScript), transporte HTTP **sin estado** con el SDK oficial.
+- **Dos entry points, un solo handler** (`mcp/src/handler.ts`): `mcp/src/index.ts` levanta un proceso largo (local, Render, cualquier VM) y `mcp/api/mcp.ts` es la función serverless de Vercel. La ruta pública es `/mcp` en ambos, así que el mismo curl y la misma config de Claude Desktop sirven en los dos.
+- Se despliega como **proyecto de Vercel aparte**, con Root Directory `mcp`. El proyecto de `web/` no lo incluye.
 - Autenticación por **Bearer token propio**, no OAuth 2.1 (decisión de hackathon). Los tokens se guardan **hasheados** (sha256) en `mcp_tokens`; el valor en claro se muestra una sola vez.
 - `mcp/src/lib/auth.ts` es el **único** archivo que usa `SUPABASE_SERVICE_ROLE_KEY`. Un agente llama sin sesión de navegador, así que no hay `auth.uid()` y RLS no aplica: toda consulta filtra explícitamente por `user_id`. RLS sigue cubriendo al cliente web.
 - Cada llamada se registra en `mcp_accesos` — es lo que permite mostrarle al usuario quién leyó su contexto y revocarlo.
