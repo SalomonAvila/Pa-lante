@@ -1,8 +1,8 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { autenticar, type ContextoMcp } from "@mcp/lib/auth";
-import { registrarExplicarDiagnostico } from "@mcp/tools/explicar-diagnostico";
+import { autenticar, type ContextoMcp } from "./lib/auth.js";
+import { registrarExplicarDiagnostico } from "./tools/explicar-diagnostico.js";
 
 /**
  * Cada sesión se construye con el contexto del usuario ya resuelto desde el

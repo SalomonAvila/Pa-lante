@@ -1,7 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { obtenerEstado } from "@mcp/lib/estado";
-import { diagnosticar, UMBRALES, formatearCOP } from "@mcp/lib/reglas";
-import { registrarAcceso, type ContextoMcp } from "@mcp/lib/auth";
+import { obtenerEstado } from "../lib/estado.js";
+import { diagnosticar, UMBRALES, formatearCOP } from "../lib/reglas.js";
+import { registrarAcceso, type ContextoMcp } from "../lib/auth.js";
 
 const DESCRIPCION =
   "Devuelve la ruta financiera del usuario (salida-de-deudas, visibilidad o " +

@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import type { EstadoFinanciero, Deuda } from "@web/types/finance";
-import { ESTADO_EJEMPLO } from "@mcp/fixtures/estado-ejemplo";
-import type { ContextoMcp } from "@mcp/lib/auth";
+import { ESTADO_EJEMPLO } from "../fixtures/estado-ejemplo.js";
+import type { ContextoMcp } from "./auth.js";
 
 type FilaTransaccion = {
   fecha: string;

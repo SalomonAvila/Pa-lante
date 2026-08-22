@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { manejarMcp } from "@mcp/handler";
+import { manejarMcp } from "./handler.js";
 
 /**
  * Servidor MCP de Pa'lante para desarrollo local y para cualquier plataforma
