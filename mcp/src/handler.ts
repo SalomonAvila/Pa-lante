@@ -3,6 +3,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { autenticar, type ContextoMcp } from "./lib/auth.js";
 import { registrarExplicarDiagnostico } from "./tools/explicar-diagnostico.js";
+import { registrarObtenerPerfil } from "./tools/obtener-perfil.js";
 
 /**
  * Cada sesión se construye con el contexto del usuario ya resuelto desde el
@@ -23,6 +24,7 @@ function construirServidor(ctx: ContextoMcp): McpServer {
   );
 
   registrarExplicarDiagnostico(server, ctx);
+  registrarObtenerPerfil(server, ctx);
   return server;
 }
 
