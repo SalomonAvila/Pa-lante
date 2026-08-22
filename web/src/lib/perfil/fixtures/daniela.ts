@@ -1,4 +1,5 @@
 import type { EntradaPerfilFinanciero } from "../perfil-financiero";
+import type { ObjetivoAccesoFinanciero } from "../../../types/finance";
 
 const MESES = [
   { mes: "2026-03", ingreso: 3_600_000, gasto: 2_400_000, cuenta: "Nequi" },
@@ -14,16 +15,21 @@ const MESES = [
  * propia y necesita demostrar capacidad económica para un arriendo sin
  * entregar sus extractos ni su historial de compras al tercero.
  */
+/**
+ * El objetivo vive fuera del perfil: es el insumo de una vista de
+ * divulgación, no parte del contexto financiero de la persona.
+ */
+export const OBJETIVO_DANIELA: ObjetivoAccesoFinanciero = {
+  tipo: "demostrar_capacidad_arriendo",
+  descripcion:
+    "Demostrar capacidad económica para arrendar una vivienda sin compartir transacciones personales.",
+  canonMensualObjetivo: 1_300_000,
+  ingresoMensualDeclarado: 4_200_000,
+  fechaObjetivo: "2026-09-15",
+};
+
 export const ENTRADA_DANIELA: EntradaPerfilFinanciero = {
   generadoEn: "2026-08-22T15:00:00.000Z",
-  objetivoAcceso: {
-    tipo: "demostrar_capacidad_arriendo",
-    descripcion:
-      "Demostrar capacidad económica para arrendar una vivienda sin compartir transacciones personales.",
-    canonMensualObjetivo: 1_300_000,
-    ingresoMensualDeclarado: 4_200_000,
-    fechaObjetivo: "2026-09-15",
-  },
   transacciones: MESES.flatMap(({ mes, ingreso, gasto, cuenta }, indice) => [
     {
       id: `tx-ingreso-${mes}`,

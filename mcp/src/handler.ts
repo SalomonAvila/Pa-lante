@@ -2,7 +2,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { autenticar, type ContextoMcp } from "./lib/auth.js";
-import { registrarExplicarDiagnostico } from "./tools/explicar-diagnostico.js";
+import { registrarObtenerPerfilFinanciero } from "./tools/obtener-perfil-financiero.js";
 import { registrarObtenerPruebaCapacidadPago } from "./tools/obtener-prueba-capacidad-pago.js";
 
 /**
@@ -23,7 +23,7 @@ function construirServidor(ctx: ContextoMcp): McpServer {
     },
   );
 
-  registrarExplicarDiagnostico(server, ctx);
+  registrarObtenerPerfilFinanciero(server, ctx);
   registrarObtenerPruebaCapacidadPago(server, ctx);
   return server;
 }

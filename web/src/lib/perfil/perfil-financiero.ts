@@ -1,5 +1,7 @@
 import type {
+  CoberturaPerfil,
   Deuda,
+  EstadoPreparacionPerfil,
   EvidenciaFinanciera,
   HallazgoFinanciero,
   MetricaVerificable,
@@ -7,6 +9,7 @@ import type {
   PerfilFinancieroV1,
   PruebaCapacidadPagoV1,
   Transaccion,
+  TipoHallazgo,
   UnidadMetrica,
 } from "../../types/finance";
 
@@ -22,7 +25,6 @@ export type EntradaPerfilFinanciero = {
   transacciones: TransaccionConId[];
   deudas: DeudaConEvidencia[];
   hallazgos: HallazgoFinanciero[];
-  objetivoAcceso: ObjetivoAccesoFinanciero | null;
   generadoEn: string;
 };
 
@@ -58,10 +60,9 @@ export function construirPerfilFinanciero(
   const cargaFinanciera =
     ingresoVerificado.valor > 0 ? (cuotaMensual / ingresoVerificado.valor) * 100 : 0;
   const flujoLibre = ingresoVerificado.valor - gastoMensual;
-  const relacionCanonIngreso =
-    entrada.objetivoAcceso && ingresoVerificado.valor > 0
-      ? (entrada.objetivoAcceso.canonMensualObjetivo / ingresoVerificado.valor) * 100
-      : 0;
+
+  const { patrimonioTotal, patrimonioPorTipo, evidenciaPatrimonio } =
+    resolverPatrimonio(entrada.hallazgos);
 
   const evidenciaIngresos = transaccionesIngreso.map(evidenciaDeTransaccion);
   const evidenciaGastos = transaccionesGasto.map(evidenciaDeTransaccion);
@@ -72,11 +73,12 @@ export function construirPerfilFinanciero(
   if (ingresoDeclarado.valor <= 0) datosFaltantes.push("ingreso_declarado");
   if (ingresoVerificado.valor <= 0) datosFaltantes.push("ingreso_observado");
   if (ingresosPorMes.length < 3) datosFaltantes.push("historia_ingresos_3_meses");
-  if (!entrada.objetivoAcceso) datosFaltantes.push("objetivo_acceso");
   if (!tieneEvidenciaObligaciones(entrada)) datosFaltantes.push("obligaciones_confirmadas");
+  if (patrimonioPorTipo.length === 0) datosFaltantes.push("patrimonio");
 
-  const senalesCompletas = 5 - datosFaltantes.length;
-  const completitud = Math.max(0, Math.round((senalesCompletas / 5) * 100));
+  const SENALES = 5;
+  const senalesCompletas = SENALES - datosFaltantes.length;
+  const completitud = Math.max(0, Math.round((senalesCompletas / SENALES) * 100));
   const todaLaEvidencia = [
     ...ingresoDeclarado.evidencia,
     ...ingresoVerificado.evidencia,
@@ -108,10 +110,12 @@ export function construirPerfilFinanciero(
     advertencias.push("Se requieren al menos tres meses de ingresos para medir estabilidad.");
   }
 
-  const estadoPreparacion: PerfilFinancieroV1["contextoObjetivo"]["estadoPreparacion"] =
+  // Preparación general del perfil: si es suficiente para un propósito
+  // concreto lo decide cada vista de divulgación, no el núcleo.
+  const estadoPreparacion: EstadoPreparacionPerfil =
     ingresoVerificado.valor <= 0
       ? "sin_datos"
-      : entrada.objetivoAcceso && ingresosPorMes.length >= 3 && porcentajeVerificado >= 70
+      : ingresosPorMes.length >= 3 && porcentajeVerificado >= 70
         ? "listo_para_compartir"
         : "requiere_datos";
 
@@ -188,21 +192,22 @@ export function construirPerfilFinanciero(
         actualizadoEn,
       ),
     },
-    objetivoAcceso: entrada.objetivoAcceso,
-    contextoObjetivo: {
-      relacionCanonIngreso: metrica(
-        entrada.objetivoAcceso ? relacionCanonIngreso : null,
-        "porcentaje",
-        "Canon objetivo dividido por ingreso mensual verificado; no constituye aprobación.",
-        ingresoVerificado.evidencia,
+    patrimonio: {
+      total: metrica(
+        patrimonioTotal,
+        "COP",
+        "Suma de activos, propiedades y vehículos reportados por las fuentes.",
+        evidenciaPatrimonio,
         actualizadoEn,
       ),
-      estadoPreparacion,
+      porTipo: patrimonioPorTipo,
     },
+    cobertura: calcularCobertura(entrada.hallazgos),
     calidadDatos: {
       completitud,
       confianza,
       fuentesIndependientes,
+      estadoPreparacion,
       datosFaltantes,
       advertencias,
     },
@@ -211,7 +216,15 @@ export function construirPerfilFinanciero(
 
 export function crearPruebaCapacidadPago(
   perfil: PerfilFinancieroV1,
+  objetivo: ObjetivoAccesoFinanciero | null,
 ): PruebaCapacidadPagoV1 {
+  const ingreso = perfil.ingresos.verificado.valor;
+  const canon = objetivo?.canonMensualObjetivo ?? null;
+  const relacionCanonIngreso =
+    canon != null && ingreso != null && ingreso > 0
+      ? redondear((canon / ingreso) * 100, 1)
+      : null;
+
   return {
     version: "1.0",
     proposito: "evaluar_capacidad_arriendo",
@@ -221,11 +234,11 @@ export function crearPruebaCapacidadPago(
     porcentajeIngresoVerificado: perfil.ingresos.porcentajeVerificado.valor,
     variacionMensualIngreso: perfil.ingresos.variacionMensual.valor,
     cargaFinanciera: perfil.obligaciones.cargaFinanciera.valor,
-    canonMensualObjetivo: perfil.objetivoAcceso?.canonMensualObjetivo ?? null,
-    relacionCanonIngreso: perfil.contextoObjetivo.relacionCanonIngreso.valor,
+    canonMensualObjetivo: canon,
+    relacionCanonIngreso,
     confianzaPerfil: perfil.calidadDatos.confianza,
     fuentesIndependientes: perfil.calidadDatos.fuentesIndependientes,
-    estadoPreparacion: perfil.contextoObjetivo.estadoPreparacion,
+    estadoPreparacion: perfil.calidadDatos.estadoPreparacion,
   };
 }
 
@@ -260,7 +273,7 @@ function obtenerIngresoDeclarado(entrada: EntradaPerfilFinanciero): ValorConEvid
   const candidato = candidatos[0];
   const valor = candidato
     ? ingresoMensualDeHallazgo(candidato)
-    : entrada.objetivoAcceso?.ingresoMensualDeclarado ?? 0;
+    : 0;
 
   return {
     valor,
@@ -476,4 +489,81 @@ function coeficienteVariacion(valores: number[]): number {
 function redondear(valor: number, decimales: number): number {
   const factor = 10 ** decimales;
   return Math.round(valor * factor) / factor;
+}
+
+/** Dominios que un perfil completo debería cubrir. */
+const DOMINIOS: TipoHallazgo[] = [
+  "income",
+  "liability",
+  "asset",
+  "property",
+  "vehicle",
+  "credit_report",
+  "pension",
+  "tax_profile",
+  "company",
+  "fine",
+  "account",
+];
+
+const DOMINIOS_PATRIMONIO: TipoHallazgo[] = ["asset", "property", "vehicle"];
+
+/**
+ * Patrimonio agregado por tipo. Los nombres de campo varían entre fuentes
+ * (avalúo, valor comercial, saldo…), por eso se buscan varias claves en vez
+ * de asumir una sola.
+ */
+function resolverPatrimonio(hallazgos: HallazgoFinanciero[]) {
+  const relevantes = hallazgos.filter((h) => DOMINIOS_PATRIMONIO.includes(h.tipo));
+
+  const porTipo = DOMINIOS_PATRIMONIO.map((tipo) => ({
+    tipo,
+    valor: relevantes
+      .filter((h) => h.tipo === tipo)
+      .reduce(
+        (suma, h) =>
+          suma +
+          numeroDe(h.datos, [
+            "valor",
+            "valorComercial",
+            "valor_comercial",
+            "avaluo",
+            "saldo",
+            "monto",
+          ]),
+        0,
+      ),
+  })).filter((entrada) => entrada.valor > 0);
+
+  return {
+    patrimonioTotal: porTipo.reduce((suma, entrada) => suma + entrada.valor, 0),
+    patrimonioPorTipo: porTipo,
+    evidenciaPatrimonio: relevantes.map(evidenciaDeHallazgo),
+  };
+}
+
+/**
+ * Cobertura: qué tanto del contexto financiero está efectivamente capturado.
+ * Es la métrica que le dice a un consumidor si vale la pena confiar en este
+ * perfil, y al usuario qué le falta por conectar.
+ */
+function calcularCobertura(hallazgos: HallazgoFinanciero[]): CoberturaPerfil {
+  const dominios = DOMINIOS.map((dominio) => {
+    const propios = hallazgos.filter((h) => h.tipo === dominio);
+    return {
+      dominio,
+      fuentes: [...new Set(propios.map((h) => h.fuente))],
+      hallazgos: propios.length,
+      confianzaMedia:
+        propios.length > 0
+          ? redondear(promedio(propios.map((h) => h.confianza)), 2)
+          : 0,
+    };
+  }).filter((entrada) => entrada.hallazgos > 0);
+
+  return {
+    dominios,
+    fuentesConectadas: [...new Set(hallazgos.map((h) => h.fuente))].sort(),
+    porcentajeCubierto: Math.round((dominios.length / DOMINIOS.length) * 100),
+  };
 }

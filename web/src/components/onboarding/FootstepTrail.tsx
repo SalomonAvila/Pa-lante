@@ -3,7 +3,7 @@ const STEPS = 7;
 /**
  * El "vúmetro" de la conversación: en vez de barras genéricas, un rastro de
  * huellas que camina — coherente con la marca (pa'lante = seguir adelante) y
- * con el sendero en zigzag que ya usa /journey.
+ * con el sendero en zigzag del onboarding.
  */
 export function FootstepTrail({ active }: { active: boolean }) {
   return (

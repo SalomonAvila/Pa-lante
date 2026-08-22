@@ -17,11 +17,11 @@ Situación compartida: su contexto financiero real existe, pero está disperso e
 
 ## Product Purpose
 
-Orientar a cualquier persona en el seguimiento de sus objetivos financieros, generando un plan paso a paso lo más automatizado posible: ingesta del contexto financiero (Gmail o PDF) → normalización a transacciones estructuradas → diagnóstico por reglas explícitas → plan con recordatorios, alertas de desvío y proyecciones.
+Ser infraestructura de datos financieros personales: extraer el contexto financiero de una persona desde tantas fuentes como sea posible, normalizarlo a un modelo único y trazable, y distribuirlo vía API y servidor MCP para que cualquier agente o sistema de IA lo consuma con permiso del dueño. Pa'lante entrega datos; las soluciones las construye quien los consume.
 
 ## Positioning
 
-Un diagnóstico transparente, no una caja negra: la ruta (deudas / visibilidad / ahorro) se decide con reglas explícitas y visibles, no "porque la IA lo dijo". Se posiciona como puente mientras no exista infraestructura de Finanzas Abiertas en Colombia (Decreto 0368 de 2026: sistema obligatorio desde abril 2026, estándares técnicos SFC esperados hacia octubre 2026, +12 meses para que las entidades habiliten acceso).
+El habilitador que le devuelve a la persona su propio contexto financiero en formato consumible por máquinas. La métrica del producto es la cobertura: qué porcentaje del contexto financiero se logra capturar y verificar. Toda cifra expuesta lleva procedencia y confianza; todo acceso queda registrado y es revocable por el dueño. Se posiciona como puente mientras no exista infraestructura de Finanzas Abiertas en Colombia (Decreto 0368 de 2026: sistema obligatorio desde abril 2026, estándares técnicos SFC esperados hacia octubre 2026, +12 meses para que las entidades habiliten acceso).
 
 ## Operating Context
 
@@ -32,11 +32,11 @@ Un diagnóstico transparente, no una caja negra: la ruta (deudas / visibilidad /
 
 ## Capabilities and Constraints
 
-- El diagnóstico es un router de reglas explícitas y visibles (umbrales sobre deuda de alto costo, flujo neto, gasto sin categorizar), no un modelo de caja negra.
-- La herramienta es de **diagnóstico, organización y seguimiento** — explícitamente NO de asesoría o recomendación de inversión (evita terreno regulado; ni el equipo ni la app son asesores licenciados).
+- El núcleo del perfil (`PerfilFinancieroV1`) es general: ningún caso de uso vive dentro de él. Cada caso se agrega como vista de divulgación derivada.
+- Pa'lante extrae, normaliza y distribuye — explícitamente NO aconseja: sin diagnóstico, sin plan, sin recomendación ni asesoría de inversión (evita terreno regulado; ni el equipo ni la app son asesores licenciados).
 - No usar datos personales reales de nadie del equipo en demos en vivo; usar una cuenta semilla de prueba.
-- Modelo de datos central: `Transaccion` (fecha, monto, tipo, comercio_raw, comercio_norm, categoria, cuenta, fuente, confianza) y `Plan` (meta, aporte_mensual, pasos[], supuestos[], fecha_objetivo); recordatorios, alertas de desvío y proyecciones se derivan del mismo modelo, no son módulos separados.
-- Capa de acceso externo planeada: exponer el contexto financiero normalizado como API/MCP para que otros agentes lo consuman.
+- Modelo de datos central: `Transaccion` y `HallazgoFinanciero` (observaciones con procedencia y confianza, sin sobrescritura entre fuentes) agregados en `PerfilFinancieroV1`.
+- Capa de distribución: servidor MCP (listo) y API REST versionada (pendiente), ambos con token del usuario, scopes y bitácora de accesos revocable.
 
 ## Brand Commitments
 
@@ -55,10 +55,10 @@ Ninguna todavía: no hay datos reales de usuarios, testimonios ni casos de estud
 
 ## Product Principles
 
-1. El diagnóstico y el plan siempre se generan con reglas explícitas y visibles — nunca una caja negra de "la IA decidió".
-2. Nunca cruzar a asesoría de inversión o financiera regulada: el producto diagnostica, organiza y hace seguimiento, punto.
+1. Toda cifra expuesta lleva su procedencia y su confianza. Un número sin respaldo no sale del sistema.
+2. Nunca cruzar a asesoría: el producto extrae, normaliza y distribuye datos, punto. El consejo lo construye quien consume la API.
 3. Gmail es una conveniencia, no una dependencia — toda funcionalidad debe operar igual de bien solo con archivos cargados manualmente.
-4. La comunicación de dinero no asusta: los montos de deuda se presentan con tonos tierra, no con rojo alarmista; el tono es de mentor cálido, no de banco clínico.
+4. El usuario manda sobre sus datos: ver quién accedió, revocar y exportar son funciones de primera clase, no ajustes escondidos.
 5. Se diseña primero para el usuario menos cómodo con la tecnología (adultos mayores / baja alfabetización digital): lenguaje simple, alto contraste, objetivos de toque grandes, mínimos pasos.
 
 ## Accessibility & Inclusion

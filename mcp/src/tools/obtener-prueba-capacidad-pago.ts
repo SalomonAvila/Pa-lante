@@ -1,5 +1,5 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { ENTRADA_DANIELA } from "@web/lib/perfil/fixtures/daniela";
+import { ENTRADA_DANIELA, OBJETIVO_DANIELA } from "@web/lib/perfil/fixtures/daniela";
 import {
   construirPerfilFinanciero,
   crearPruebaCapacidadPago,
@@ -85,7 +85,10 @@ export function registrarObtenerPruebaCapacidadPago(
 
 export async function obtenerPruebaCapacidadPagoMcp(ctx: ContextoMcp) {
   if (ctx.demo) {
-    return crearPruebaCapacidadPago(construirPerfilFinanciero(ENTRADA_DANIELA));
+    return crearPruebaCapacidadPago(
+      construirPerfilFinanciero(ENTRADA_DANIELA),
+      OBJETIVO_DANIELA,
+    );
   }
 
   const supabase = clienteServicioMcp();
@@ -95,6 +98,9 @@ export async function obtenerPruebaCapacidadPagoMcp(ctx: ContextoMcp) {
 
   // La clave de servicio omite RLS: obtenerPerfilFinanciero aplica user_id en
   // cada consulta y ctx.userId viene del Bearer token ya validado.
-  const perfil = await obtenerPerfilFinanciero(supabase, ctx.userId);
-  return crearPruebaCapacidadPago(perfil);
+  const { perfil, objetivoAcceso } = await obtenerPerfilFinanciero(
+    supabase,
+    ctx.userId,
+  );
+  return crearPruebaCapacidadPago(perfil, objetivoAcceso);
 }

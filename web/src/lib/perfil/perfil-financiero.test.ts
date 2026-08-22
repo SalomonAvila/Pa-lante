@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { ENTRADA_DANIELA } from "./fixtures/daniela";
+import { ENTRADA_DANIELA, OBJETIVO_DANIELA } from "./fixtures/daniela";
 import {
   construirPerfilFinanciero,
   crearPruebaCapacidadPago,
@@ -15,7 +15,7 @@ describe("perfil financiero portable", () => {
     expect(perfil.ingresos.verificado.valor).toBe(3_950_000);
     expect(perfil.ingresos.porcentajeVerificado.valor).toBe(94.05);
     expect(perfil.periodo.mesesObservados).toBe(6);
-    expect(perfil.contextoObjetivo.estadoPreparacion).toBe("listo_para_compartir");
+    expect(perfil.calidadDatos.estadoPreparacion).toBe("listo_para_compartir");
   });
 
   it("no suma dos veces una obligación observada en deuda y hallazgo", () => {
@@ -35,7 +35,7 @@ describe("perfil financiero portable", () => {
 
   it("genera una prueba compartible sin transacciones ni referencias privadas", () => {
     const perfil = construirPerfilFinanciero(ENTRADA_DANIELA);
-    const prueba = crearPruebaCapacidadPago(perfil);
+    const prueba = crearPruebaCapacidadPago(perfil, OBJETIVO_DANIELA);
     const serializada = JSON.stringify(prueba);
 
     expect(prueba.ingresoMensualVerificado).toBe(3_950_000);
@@ -51,13 +51,12 @@ describe("perfil financiero portable", () => {
       transacciones: [],
       deudas: [],
       hallazgos: [],
-      objetivoAcceso: null,
       generadoEn: "2026-08-22T15:00:00.000Z",
     };
     const perfil = construirPerfilFinanciero(entradaVacia);
 
     expect(perfil.ingresos.verificado.valor).toBe(0);
-    expect(perfil.contextoObjetivo.estadoPreparacion).toBe("sin_datos");
+    expect(perfil.calidadDatos.estadoPreparacion).toBe("sin_datos");
     expect(perfil.calidadDatos.completitud).toBe(0);
     expect(perfil.calidadDatos.datosFaltantes).toContain("ingreso_observado");
   });

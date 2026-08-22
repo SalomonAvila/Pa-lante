@@ -68,7 +68,7 @@ export function LoginForm() {
       setEntrandoConPassword(false);
       return;
     }
-    router.push("/journey");
+    router.push("/panorama");
     router.refresh();
   }
 

@@ -34,11 +34,12 @@ export default async function PanoramaPage() {
   if (!user) return null;
 
   const supabase = await createClient();
-  const [perfil, conexiones] = await Promise.all([
+  const [contexto, conexiones] = await Promise.all([
     obtenerPerfilFinanciero(supabase, user.id),
     listarConexiones(supabase, user.id),
   ]);
-  const prueba = crearPruebaCapacidadPago(perfil);
+  const { perfil, objetivoAcceso } = contexto;
+  const prueba = crearPruebaCapacidadPago(perfil, objetivoAcceso);
   const porcentajeVerificado = prueba.porcentajeIngresoVerificado ?? 0;
   const listo = prueba.estadoPreparacion === "listo_para_compartir";
 
@@ -82,7 +83,7 @@ export default async function PanoramaPage() {
             </span>
             <p className="mt-4 label-sm uppercase text-on-surface-variant">Objetivo de acceso</p>
             <p className="mt-1 body-md font-medium text-on-surface">
-              {perfil.objetivoAcceso?.descripcion ?? "Todavía no definiste un objetivo"}
+              {objetivoAcceso?.descripcion ?? "Todavía no definiste un objetivo"}
             </p>
           </div>
           {prueba.canonMensualObjetivo != null && (

@@ -22,51 +22,6 @@ export type Deuda = {
   cuotaMensual: number | null;
 };
 
-export type Plan = {
-  meta: string;
-  aporteMensual: number;
-  pasos: string[];
-  supuestos: string[];
-  fechaObjetivo: string;
-};
-
-/** Foto agregada del contexto financiero. Es lo que consume el MCP. */
-export type EstadoFinanciero = {
-  periodo: { desde: string; hasta: string; meses: number };
-  ingresoMensual: number;
-  gastoMensual: number;
-  flujoNeto: number;
-  gastoPorCategoria: Record<string, number>;
-  gastoSinCategorizar: number;
-  deudas: Deuda[];
-  calidadDatos: {
-    transacciones: number;
-    sinCategorizar: number;
-    confianzaMedia: number;
-  };
-};
-
-export type ReglaEvaluada = {
-  id: string;
-  descripcion: string;
-  umbral: string;
-  valorObservado: string;
-  cumple: boolean;
-};
-
-export type Diagnostico = {
-  ruta: "salida-de-deudas" | "visibilidad" | "meta-de-ahorro";
-  razon: string;
-  reglas: ReglaEvaluada[];
-  advertencias: string[];
-};
-
-/**
- * Normalización genérica del perfil financiero extendido (DataCrédito, DIAN,
- * Colpensiones, RUNT, extractos manuales...). En vez de una tabla por tipo
- * (Income, Liability, Asset...) se usa un discriminante `tipo` + trazabilidad,
- * igual que `EstadoFinanciero.calidadDatos` ya trackea confianza por fila.
- */
 export type TipoHallazgo =
   | "income"
   | "liability"
@@ -145,9 +100,35 @@ export type EstadoPreparacionPerfil =
   | "listo_para_compartir";
 
 /**
- * Contrato canónico que consumen la web, el chat y el MCP. Es una foto
- * calculada y versionada; las observaciones originales siguen viviendo en
- * transacciones/hallazgos y nunca se sobrescriben.
+ * Qué tanto del contexto financiero de la persona está efectivamente
+ * capturado. En un producto de datos esta es la métrica de producto, no un
+ * campo secundario: mide qué tan útil es este perfil para quien lo consuma.
+ */
+export type CoberturaDominio = {
+  dominio: TipoHallazgo;
+  fuentes: string[];
+  hallazgos: number;
+  confianzaMedia: number;
+};
+
+export type CoberturaPerfil = {
+  dominios: CoberturaDominio[];
+  fuentesConectadas: string[];
+  /** Dominios con al menos una fuente, sobre el total de dominios posibles. */
+  porcentajeCubierto: number;
+};
+
+/**
+ * Núcleo canónico del perfil financiero. Es GENERAL por diseño: no contiene
+ * nada de ningún caso de uso concreto.
+ *
+ * Esta es la regla que sostiene el producto: cuando aparezca un caso nuevo
+ * (crédito, subsidio, contratación, lo que sea) se agrega una vista derivada
+ * y el núcleo NO se toca. Un caso de uso dentro del núcleo obligaría a todo
+ * consumidor existente a migrar cada vez que aparece otro.
+ *
+ * Es una foto calculada y versionada; las observaciones originales siguen
+ * viviendo en transacciones/hallazgos y nunca se sobrescriben.
  */
 export type PerfilFinancieroV1 = {
   version: "1.0";
@@ -168,20 +149,26 @@ export type PerfilFinancieroV1 = {
     cuotaMensual: MetricaVerificable;
     cargaFinanciera: MetricaVerificable;
   };
-  objetivoAcceso: ObjetivoAccesoFinanciero | null;
-  contextoObjetivo: {
-    relacionCanonIngreso: MetricaVerificable;
-    /** Describe suficiencia de evidencia, nunca aprobación de un arriendo. */
-    estadoPreparacion: EstadoPreparacionPerfil;
+  patrimonio: {
+    total: MetricaVerificable;
+    porTipo: { tipo: TipoHallazgo; valor: number }[];
   };
+  cobertura: CoberturaPerfil;
   calidadDatos: {
     completitud: number;
     confianza: number;
     fuentesIndependientes: number;
+    estadoPreparacion: EstadoPreparacionPerfil;
     datosFaltantes: string[];
     advertencias: string[];
   };
 };
+
+/**
+ * Propósitos de divulgación soportados. Crecer esta lista agrega vistas
+ * derivadas; nunca modifica PerfilFinancieroV1.
+ */
+export type PropositoDivulgacion = "evaluar_capacidad_arriendo";
 
 /**
  * Vista de divulgación mínima para un tercero. Deliberadamente no contiene
@@ -189,7 +176,7 @@ export type PerfilFinancieroV1 = {
  */
 export type PruebaCapacidadPagoV1 = {
   version: "1.0";
-  proposito: "evaluar_capacidad_arriendo";
+  proposito: Extract<PropositoDivulgacion, "evaluar_capacidad_arriendo">;
   emitidoEn: string;
   periodo: PerfilFinancieroV1["periodo"];
   ingresoMensualVerificado: number | null;

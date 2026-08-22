@@ -54,11 +54,21 @@ export type FilaPlanAcceso = {
   datos_meta: Record<string, unknown> | null;
 };
 
+/**
+ * El perfil canónico y, aparte, el objetivo declarado por el usuario. Quien
+ * necesite una vista de divulgación combina los dos; quien solo necesite los
+ * datos ignora el segundo.
+ */
+export type ContextoPerfil = {
+  perfil: PerfilFinancieroV1;
+  objetivoAcceso: ObjetivoAccesoFinanciero | null;
+};
+
 export async function obtenerPerfilFinanciero(
   supabase: SupabaseClient,
   userId: string,
   generadoEn = new Date().toISOString(),
-): Promise<PerfilFinancieroV1> {
+): Promise<ContextoPerfil> {
   const [resultadoTransacciones, resultadoDeudas, resultadoHallazgos, resultadoPlan] =
     await Promise.all([
       supabase
@@ -110,13 +120,18 @@ export async function obtenerPerfilFinanciero(
     (resultadoPlan.data as FilaPlanAcceso | null) ?? null,
   );
 
-  return construirPerfilFinanciero({
-    transacciones,
-    deudas,
-    hallazgos,
+  return {
+    perfil: construirPerfilFinanciero({
+      transacciones,
+      deudas,
+      hallazgos,
+      generadoEn,
+    }),
+    // El objetivo NO forma parte del perfil: es el insumo de una vista de
+    // divulgación concreta. Viaja aparte para que el núcleo siga siendo
+    // general y no haya que tocarlo cuando aparezca otro caso de uso.
     objetivoAcceso,
-    generadoEn,
-  });
+  };
 }
 
 export function objetivoDesdePlan(

@@ -4,8 +4,6 @@ import { createServerClient } from "@supabase/ssr";
 // "/registro" y "/registro/verificar-correo" quedan afuera a propósito: ahí
 // todavía no hay sesión (signUp sin confirmar / la página que la establece).
 const RUTAS_PROTEGIDAS = [
-  "/journey",
-  "/insights",
   "/intake",
   "/registro/verificar-identidad",
   "/registro/autorizacion",
@@ -56,7 +54,7 @@ export default async function proxy(request: NextRequest) {
   }
 
   if (user && pathname === "/login") {
-    return NextResponse.redirect(new URL("/journey", request.url));
+    return NextResponse.redirect(new URL("/panorama", request.url));
   }
 
   return response;
@@ -64,8 +62,6 @@ export default async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/journey/:path*",
-    "/insights/:path*",
     "/intake/:path*",
     "/login",
     "/registro/verificar-identidad/:path*",

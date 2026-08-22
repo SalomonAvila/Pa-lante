@@ -11,7 +11,7 @@ Este proyecto tiene **dos productos distintos que comparten el mismo modelo de d
 
 | Frente | Qué es | Quién lo usa |
 |--------|--------|--------------|
-| **Web app** (Next.js) | Interfaz donde el usuario conecta sus datos, ve su diagnóstico y sigue su plan financiero personalizado | El usuario final |
+| **Web app** (Next.js) | Donde el usuario conecta fuentes, ve su cobertura y administra quién accede a sus datos | El dueño de los datos |
 | **Servidor MCP** | Expone el contexto financiero normalizado del usuario como herramientas consumibles por agentes de IA externos | Otros agentes, integraciones, demos del track Access |
 
 Ambos frentes leen del mismo modelo de datos (Supabase). El MCP no tiene UI — solo expone tools con el contexto ya procesado.
@@ -20,16 +20,30 @@ Ambos frentes leen del mismo modelo de datos (Supabase). El MCP no tiene UI — 
 
 ## Objetivo del producto
 
-Herramienta que convierte el contexto financiero disperso de una persona (correos bancarios, PDFs de extractos) en un **plan financiero personalizado, dinámico y con seguimiento automático**.
+**Pa'lante es infraestructura de datos financieros personales.** No es una app
+de finanzas personales.
 
-**Problema central:** el contexto financiero de una persona existe, pero está atrapado en 200 correos y 12 PDFs con clave. Ningún sistema puede leerlo ni actuarlo.
+Somos especialistas en tres cosas, en este orden:
 
-**A quién sirve:** cualquier persona, sin importar su situación. El diagnóstico decide automáticamente su ruta:
-- Persona endeudada → ruta *Salida de deudas*
-- Persona con flujo negativo o gasto sin categorizar → ruta *Visibilidad*
-- Persona con flujo positivo sin deuda cara → ruta *Meta de ahorro / capacidad de inversión*
+1. **Extraer** el contexto financiero de una persona de la forma más sencilla
+   posible, desde tantas fuentes como se pueda.
+2. **Normalizar** todo eso a un modelo único, trazable y versionado.
+3. **Distribuir** ese perfil a través de una API y un servidor MCP, para que
+   cualquier agente o sistema de IA lo consuma con permiso del dueño.
 
----
+**Problema central:** el contexto financiero de una persona existe, pero está
+atrapado en correos, PDFs con clave y portales de entidades. Ningún sistema
+puede leerlo, y menos actuarlo. Nosotros somos el habilitador.
+
+**Qué NO somos:** no damos diagnóstico, ni plan, ni recomendación, ni asesoría.
+Esas son soluciones que *otros* construyen encima de nuestros datos — y que el
+propio usuario habilita conectando su agente. Si aparece la tentación de
+construir el consejo dentro de Pa'lante, es señal de que nos salimos del
+alcance.
+
+**La métrica del producto es la cobertura:** qué porcentaje del contexto
+financiero de una persona logramos capturar y verificar. Todo lo demás se
+deriva de ahí.
 
 ## Flujo completo del producto
 
@@ -75,46 +89,31 @@ Ejemplo: "COMPRA PSE *DLO*RAPPI BOG 23,500" →
 
 El parser se construye y prueba contra fixtures locales (`/fixtures/`), no contra Gmail en vivo. Gmail es una fuente intercambiable, no una dependencia.
 
-### 3. Diagnóstico (router con reglas explícitas)
+### 3. Perfil financiero portable
 
-```
-IF deuda_alto_costo > 30% ingreso_mensual  → RUTA: salida_deudas
-ELSE IF flujo_neto < 0 OR sin_categorizar > 25%  → RUTA: visibilidad
-ELSE  → RUTA: meta_ahorro
-```
+`web/src/lib/perfil/perfil-financiero.ts` agrega transacciones, deudas y
+hallazgos en `PerfilFinancieroV1`: el contrato canónico.
 
-Los umbrales están escritos en código visible, no "la IA decidió".
+**Regla que sostiene el producto: el núcleo es general.** No contiene nada de
+ningún caso de uso. Cuando aparece un caso nuevo (arriendo, crédito, subsidio,
+contratación) se agrega una *vista de divulgación* derivada — nunca un campo
+en el núcleo. Un caso de uso dentro del núcleo obligaría a migrar a todos los
+consumidores existentes cada vez que aparece otro.
 
-### 4. Generación del plan (motor IA)
+Hoy existe una sola vista: `crearPruebaCapacidadPago(perfil, objetivo)`.
 
-**El plan NO es un roadmap lineal. Es un árbol de carriles paralelos no bloqueantes.**
+### 4. Distribución
 
-El número de carriles, la profundidad de cada uno y las tareas específicas son generados por el modelo a partir del contexto real. No hay plantillas fijas. Si alguien tiene 5 deudas, puede tener 7 carriles. Si no tiene deudas, puede tener 2. El modelo genera exactamente lo que el dolor del usuario justifica.
+El perfil sale por dos puertas, ambas autenticadas con el mismo token del
+usuario y registradas en `mcp_accesos`:
 
-**Señales que generan carriles (ejemplos, no lista cerrada):**
-- Deuda con tasa > 20% E.A. → carril "Salida [banco] $X"
-- Flujo neto negativo → carril "Reducir gasto"
-- Sin fondo de emergencia → carril "Fondo emergencia"
-- Suscripciones sin uso detectadas → carril "Cancelar suscripciones" con las N tareas concretas
-- Score crediticio + tasa alta → carril "Conseguir tarjeta con menor tasa"
-- Ingreso nuevo detectado en Gmail → nuevo carril de oportunidad generado dinámicamente
+- **Servidor MCP** (`mcp/`) — para agentes de IA.
+- **API REST** (`web/src/app/api/`) — para integraciones que no hablan MCP.
 
-**Tipos de carril:**
-- `secuencial` — los pasos se desbloquean uno a uno dentro del carril
-- `paralelo` — corre simultáneamente con otros carriles, no los bloquea
-- `en_espera` — el carril está activo pero aguardando algo externo (ej. aprobación de tarjeta)
-- `siempre_activo` — tareas sin orden, el usuario las ataca cuando puede
+El usuario genera el token desde su cuenta, ve quién lo usó y lo revoca. Esa
+trazabilidad no es un extra: es lo que hace aceptable mover datos financieros
+personales.
 
-**Pasos auto-detectables:** cuando el sistema detecta la transacción en Gmail o vía Belvo, marca el paso solo. El usuario no tiene que volver a la app a confirmar nada.
-
-### 5. Seguimiento (vistas derivadas del mismo modelo)
-
-Las tres vistas no son módulos separados — son queries sobre `Transaccion` + `NodoPlan`:
-- **Recordatorios** → `NodoPlan.pasos[]` con fecha
-- **Alertas de desvío** → `Transaccion` real vs. `NodoPlan.aporte_mensual`
-- **Proyecciones** → aritmética sobre flujo neto + supuestos del plan
-
----
 
 ## Modelo de datos
 
@@ -137,45 +136,22 @@ interface Transaccion {
 }
 ```
 
-### NodoPlan (árbol del plan)
+### HallazgoFinanciero
 
-```typescript
-interface NodoPlan {
-  id: string
-  usuario_id: string
-  titulo: string                       // específico: "Abonar $450K a Falabella el 15 sep"
-  tipo: 'accion' | 'consulta' | 'decision' | 'meta'
-  tipo_carril: 'secuencial' | 'paralelo' | 'en_espera' | 'siempre_activo'
-  urgencia: 1 | 2 | 3                 // 1 = crítico
-  estado: 'bloqueado' | 'activo' | 'en_progreso' | 'completado'
-  dependencias: string[]              // IDs de nodos que deben completarse antes
-  paralelos: string[]                 // IDs de nodos que corren al mismo tiempo
-  hijos: string[]                     // qué se desbloquea al completar este
-  auto_detectable: boolean            // ¿el sistema lo marca solo?
-  fuente_deteccion?: 'gmail' | 'belvo' | 'manual'
-  aporte_mensual?: number             // para alertas de desvío
-  fecha_objetivo?: Date
-  resultado?: unknown
-  created_at: Date
-  updated_at: Date
-}
-```
+Una sola tabla con `tipo` discriminante en vez de once tablas por dominio. Un
+hallazgo nuevo **nunca sobrescribe** uno contradictorio de otra fuente: cada
+uno es su propia fila, con `fuente`, `procedencia`, `confianza` y `periodo`.
+Preservar la contradicción es intencional — es lo que permite mostrar de dónde
+viene cada cifra y con qué respaldo.
 
-### EstadoFinanciero (calculado, no persistido)
+### PerfilFinancieroV1 (calculado, no persistido)
 
-```typescript
-interface EstadoFinanciero {
-  ingreso_mensual_promedio: number
-  gasto_mensual_promedio: number
-  deudas: { acreedor: string; monto: number; tasa: number; plazo?: number }[]
-  flujo_neto: number
-  gasto_por_categoria: Record<string, number>
-  gasto_sin_categorizar_pct: number
-  confianza_datos: number             // 0.0 – 1.0
-}
-```
+Núcleo general: `periodo`, `ingresos`, `flujo`, `obligaciones`, `patrimonio`,
+`cobertura`, `calidadDatos`. Ver `web/src/types/finance.ts`.
 
----
+`cobertura` responde qué dominios están respaldados, por qué fuentes y con qué
+confianza. Es la métrica de producto, no un campo secundario.
+
 
 ## Stack
 
@@ -220,7 +196,8 @@ interface EstadoFinanciero {
 - Un usuario que entró por enlace mágico no tiene Gmail conectado; puede subir PDFs.
 - Aislamiento de datos por usuario con **RLS** en todas las tablas.
 - El `service_role key` nunca va al cliente ni al `.env.example`.
-- Rutas protegidas: `/journey`, `/insights`, `/intake` — middleware `src/proxy.ts` usa `getUser()`, no `getSession()`.
+- Rutas protegidas: `/journey`, `/insights`, `/intake`, `/panorama` y
+  `/configuracion` — middleware `src/proxy.ts` usa `getUser()`, no `getSession()`.
 
 ---
 
@@ -277,16 +254,19 @@ cuentas, comercios, documentos o IDs de evidencia. Web y MCP deben consumir
 
 ---
 
-## UX — filosofía del plan
+## UX — filosofía
 
-- **No hay número fijo de carriles.** El plan se genera completamente desde el contexto del usuario. Una persona puede tener 2 carriles, otra 8.
-- **Los carriles son paralelos y no bloqueantes.** Si un carril está "en espera" (ej. aprobación de tarjeta), el usuario siempre tiene otros carriles activos donde avanzar.
-- **Los títulos son específicos, no genéricos.** "Abonar $450.000 a Falabella el 15 de septiembre" — no "pagar tu deuda".
-- **La detección automática reduce fricción.** Los pasos auto-detectables se marcan solos cuando el sistema detecta la transacción. El usuario no regresa a la app a confirmar.
-- **El plan vive y evoluciona.** Si aparece un ingreso nuevo detectado en Gmail, puede generarse un carril de oportunidad que antes no existía.
-- **Estilo Duolingo:** la mascota (La Hormiga Ahorradora) reacciona según el estado del usuario. Celebra logros, alerta sin culpar.
+- **La pantalla principal es la cobertura**, no un tablero de finanzas: qué
+  fuentes están conectadas, qué falta, y qué tan verificado está lo que hay.
+- **Conectar una fuente es el acto central del producto.** Cada fuente nueva
+  debe costarle al usuario lo mínimo posible; ahí es donde competimos.
+- **Trazabilidad visible.** Toda cifra puede responder de dónde salió y con
+  qué confianza. Nunca un número sin procedencia.
+- **El usuario manda sobre sus datos.** Ver quién los leyó, revocar acceso y
+  exportarlo todo son funciones de primera clase, no ajustes escondidos.
+- Diseñar primero para el usuario menos cómodo con la tecnología: lenguaje
+  simple, alto contraste, pasos mínimos.
 
----
 
 ## Mascota
 
@@ -296,40 +276,63 @@ cuentas, comercios, documentos o IDs de evidencia. Web y MCP deben consumir
 
 ## Restricciones importantes
 
-- La herramienta es de **diagnóstico, organización y seguimiento** — NOT de asesoría de inversión. No recomienda productos financieros específicos.
+- **Pa'lante extrae, normaliza y distribuye datos. No aconseja.** No damos diagnóstico, plan, recomendación ni asesoría financiera o de inversión. Quien consuma la API decide qué hacer con la información, y responde por ello.
+- **Ningún caso de uso entra al núcleo de `PerfilFinancieroV1`.** Se agrega como vista de divulgación derivada.
 - No usar datos personales reales del equipo en demos. Usar cuenta semilla de prueba.
 - **Gmail no es una dependencia dura.** El parser debe funcionar con fixtures locales. Gmail es una fuente intercambiable.
+- **Toda cifra expuesta lleva su procedencia y su confianza.** Un número sin respaldo no sale del sistema.
+- **Todo acceso queda registrado y es revocable por el dueño.** Es lo que hace aceptable mover datos financieros personales.
 - Contexto regulatorio Colombia: Decreto 0368 de 2026 estableció Finanzas Abiertas obligatorias. Estándares técnicos SFC esperados octubre 2026; entidades tienen 12 meses adicionales para implementar. Esta herramienta construye el puente mientras tanto.
 
 ---
 
 ## Estado actual del proyecto
 
-- [x] Next.js inicializado con TypeScript, ESLint, Tailwind, App Router y `src/`
-- [x] Supabase Auth configurado (Google OAuth + Magic Link)
-- [ ] `.env.local` configurado con variables reales
-- [ ] Primer commit limpio hecho
-- [ ] Prettier + Husky/lint-staged configurados
-- [ ] Estructura de carpetas `web/` y `mcp/` creada (monorepo con workspaces de Bun, `mcp/` con un tool de ejemplo `get_transacciones`)
-- [ ] Parser: correo/PDF → `Transaccion` (testeado con fixtures)
-- [ ] `EstadoFinanciero` calculado desde transacciones
-- [ ] Router de diagnóstico (umbrales explícitos en código)
-- [ ] Motor de generación de plan (prompt → `NodoPlan[]`)
-- [ ] UI de carriles paralelos (web)
-- [ ] Servidor MCP con tools sobre el contexto normalizado
-- [ ] Gmail OAuth en vivo como fuente intercambiable
-- [ ] Integración Belvo/Finerio (opcional, post-MVP)
+**Extracción**
+- [x] 13 conectores simulados (`web/src/lib/conectores/catalogo.ts`)
+- [x] Registro, verificación de identidad y consentimientos separados
+- [ ] Gmail OAuth en vivo como fuente
+- [ ] Parser correo/PDF → `Transaccion` (probado contra `/fixtures/`)
+- [ ] Automatización real o API oficial de alguna entidad
 
----
+**Normalización**
+- [x] `hallazgos_financieros` con trazabilidad y sin sobrescritura
+- [x] `PerfilFinancieroV1` general + vista de divulgación derivada
+- [x] `cobertura` por dominio y fuente
+- [ ] Deduplicación entre fuentes (`hash_dedupe`)
+
+**Distribución**
+- [x] Servidor MCP con Bearer token hasheado y bitácora de accesos
+- [x] Tools: `obtener_perfil_financiero`, `obtener_prueba_capacidad_pago`
+- [ ] API REST pública versionada (`/api/v1/*`) con el mismo token
+- [ ] Scopes por token (hoy un token lee todo)
+- [ ] Exportación completa de los datos del usuario
+- [ ] Tools pendientes: `buscar_hallazgos`, `listar_fuentes`, `cobertura`
+
+**Retirado a propósito**
+El producto de planeación (diagnóstico por rutas, plan, `/journey`,
+`/insights`) se eliminó: era otro producto. Pa'lante entrega datos; el consejo
+lo construye quien consuma la API.
+
 
 ## Contratos congelados (los tres frentes construyen contra esto)
 
-`Transaccion`, `Deuda`, `Plan`, `EstadoFinanciero`, y desde el perfil financiero extendido también `TipoHallazgo`/`ProcedenciaDato`/`HallazgoFinanciero`, viven en `src/types/finance.ts`. `EstadoFinanciero` es el contrato entre la ingesta y el MCP: quien cambie la agregación no debe tocar ninguna herramienta MCP.
+Todo vive en `web/src/types/finance.ts` y es la única fuente de verdad; el MCP
+lo importa vía el alias `@web/*` en `mcp/tsconfig.json` — **nunca se duplica**.
+
+| Contrato | Qué es |
+|---|---|
+| `Transaccion`, `Deuda` | Observaciones crudas normalizadas |
+| `HallazgoFinanciero` | Hallazgo de una fuente, con procedencia y confianza |
+| `PerfilFinancieroV1` | **Núcleo general.** Cambiarlo obliga a migrar a todo consumidor |
+| `PruebaCapacidadPagoV1` | Primera vista de divulgación derivada |
+| `CoberturaPerfil` | Qué está capturado, por qué fuente, con qué confianza |
 
 Pendiente de confirmar con el equipo:
-- ¿"Deuda de alto costo > 30% del ingreso" se mide sobre la **cuota mensual** (asumido hoy en `src/lib/diagnostico/reglas.ts`) o sobre el **saldo**?
-- ¿De dónde sale `tasa_ea`? Los correos bancarios no la traen; probablemente la digita el usuario.
-- ¿Quién llena `hash_dedupe` y con qué algoritmo?
+- ¿Quién llena `hash_dedupe` y con qué algoritmo? Sin eso, una misma deuda que
+  llegue por dos fuentes se cuenta dos veces.
+- ¿De dónde sale `tasa_ea`? Los correos bancarios no la traen.
+- ¿Qué scopes necesita un token? Hoy un token lee el perfil completo.
 
 ## Notas para Claude Code
 

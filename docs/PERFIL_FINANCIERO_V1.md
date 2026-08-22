@@ -88,6 +88,13 @@ Herramienta implementada:
 - En modo real resuelve el usuario desde el Bearer token y filtra cada consulta
   a Supabase por ese `user_id`; nunca acepta la identidad como argumento.
 
+El usuario administra estas credenciales desde `/configuracion/privacidad`:
+
+- `POST /api/mcp/tokens` genera una credencial y devuelve el valor en claro una
+  sola vez; Postgres conserva únicamente su SHA-256 y un prefijo reconocible.
+- `GET /api/mcp/tokens` lista credenciales y las últimas lecturas del perfil.
+- `DELETE /api/mcp/tokens/:id` revoca el acceso sin borrar su historial.
+
 ## Verificación
 
 ```bash
