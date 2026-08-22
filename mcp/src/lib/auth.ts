@@ -17,6 +17,15 @@ function clienteServicio() {
   return createClient(url, secret, { auth: { persistSession: false } });
 }
 
+/**
+ * Cliente interno para herramientas MCP que ya recibieron un ContextoMcp
+ * autenticado. El caller debe filtrar cada consulta por ctx.userId porque la
+ * clave de servicio no está cubierta por RLS.
+ */
+export function clienteServicioMcp() {
+  return clienteServicio();
+}
+
 const PREFIJO = "palante_";
 
 export function hashToken(token: string): string {

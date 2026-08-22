@@ -3,6 +3,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { autenticar, type ContextoMcp } from "./lib/auth.js";
 import { registrarExplicarDiagnostico } from "./tools/explicar-diagnostico.js";
+import { registrarObtenerPruebaCapacidadPago } from "./tools/obtener-prueba-capacidad-pago.js";
 
 /**
  * Cada sesión se construye con el contexto del usuario ya resuelto desde el
@@ -14,15 +15,16 @@ function construirServidor(ctx: ContextoMcp): McpServer {
     { name: "palante", version: "0.1.0" },
     {
       instructions:
-        "Contexto financiero normalizado de un usuario de Pa'lante " +
-        "(transacciones de bancos colombianos, deudas y plan). Las cifras " +
-        "están en pesos colombianos. Pa'lante diagnostica y organiza; no da " +
-        "asesoría de inversión, así que no formules recomendaciones de " +
-        "inversión como si vinieran de esta fuente.",
+        "Perfil financiero normalizado, trazable y autorizado de un usuario " +
+        "de Pa'lante. Las cifras están en pesos colombianos. Las pruebas para " +
+        "terceros demuestran contexto y suficiencia de evidencia, pero nunca " +
+        "aprueban crédito, arriendos ni otros servicios. Pa'lante diagnostica " +
+        "y organiza; no da asesoría de inversión.",
     },
   );
 
   registrarExplicarDiagnostico(server, ctx);
+  registrarObtenerPruebaCapacidadPago(server, ctx);
   return server;
 }
 

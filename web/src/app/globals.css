@@ -288,3 +288,81 @@ body {
     animation: none !important;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Ambiente de la landing
+   Capas de luz que derivan lentamente sobre el crema. Sin video: nada que
+   cargar, nada que se pueda caer en vivo, y el texto encima nunca pierde
+   contraste porque las capas van a opacidad baja sobre un fondo claro fijo.
+--------------------------------------------------------------------------- */
+
+@keyframes aurora-deriva-a {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(6%, -4%, 0) scale(1.12);
+  }
+}
+
+@keyframes aurora-deriva-b {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1.08);
+  }
+  50% {
+    transform: translate3d(-7%, 5%, 0) scale(1);
+  }
+}
+
+@keyframes aurora-deriva-c {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(4%, 6%, 0) scale(1.15);
+  }
+}
+
+.aurora-a {
+  animation: aurora-deriva-a 22s ease-in-out infinite;
+}
+.aurora-b {
+  animation: aurora-deriva-b 28s ease-in-out infinite;
+}
+.aurora-c {
+  animation: aurora-deriva-c 25s ease-in-out infinite;
+}
+
+/* Entrada escalonada: cada elemento aparece con un retraso propio via
+   --retraso, así el hero se arma en vez de aparecer de golpe. */
+@keyframes emerger {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.emerger {
+  opacity: 0;
+  animation: emerger 0.7s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+  animation-delay: var(--retraso, 0ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora-a,
+  .aurora-b,
+  .aurora-c {
+    animation: none !important;
+  }
+  .emerger {
+    opacity: 1;
+    animation: none !important;
+  }
+}

@@ -199,8 +199,14 @@ interface EstadoFinanciero {
 - Autenticación por **Bearer token propio**, no OAuth 2.1 (decisión de hackathon). Los tokens se guardan **hasheados** (sha256) en `mcp_tokens`; el valor en claro se muestra una sola vez.
 - `mcp/src/lib/auth.ts` es el **único** archivo que usa `SUPABASE_SERVICE_ROLE_KEY`. Un agente llama sin sesión de navegador, así que no hay `auth.uid()` y RLS no aplica: toda consulta filtra explícitamente por `user_id`. RLS sigue cubriendo al cliente web.
 - Cada llamada se registra en `mcp_accesos` — es lo que permite mostrarle al usuario quién leyó su contexto y revocarlo.
-- Tools: `explicar_diagnostico` (lista). Pendientes: `obtener_contexto_financiero`, `buscar_transacciones`, `obtener_plan`, `simular_escenario`.
-- Con `MCP_DEMO_TOKEN` el servidor responde contra `mcp/src/fixtures/estado-ejemplo.ts` sin tocar Postgres. **Quitar en producción.**
+- Tools: `explicar_diagnostico` y `obtener_prueba_capacidad_pago` (listas). La
+  segunda devuelve únicamente agregados verificables para un arriendo, nunca
+  transacciones o evidencia identificable, y no toma decisiones de aprobación.
+  Pendientes: `obtener_contexto_financiero`, `buscar_transacciones`,
+  `obtener_plan`, `simular_escenario`.
+- Con `MCP_DEMO_TOKEN` el servidor responde contra fixtures ficticios sin tocar
+  Postgres: el diagnóstico usa `mcp/src/fixtures/estado-ejemplo.ts` y la prueba
+  de capacidad usa `web/src/lib/perfil/fixtures/daniela.ts`. **Quitar en producción.**
 - El modelo de datos NO se duplica: `mcp/tsconfig.json` mapea `@web/*` a `web/src/*`, así que los tipos de `web/src/types/finance.ts` son la única fuente de verdad para ambos frentes.
 
 ---
@@ -227,6 +233,14 @@ Además del flujo original (Gmail/PDF → `Transaccion` → diagnóstico → pla
 **Conectores de fuentes externas** — no existen credenciales ni convenios reales con DataCrédito, TransUnion, DIAN, Colpensiones, RUNT, SIMIT, RUES, etc. Cada fuente en `web/src/lib/conectores/catalogo.ts` es un guion simulado (`web/src/lib/conectores/guiones.ts`) con datos de fixture, igual que la cuenta semilla. **Toda fuente resuelve primero el ciclo de vida de cuenta** (¿ya tiene cuenta ahí? → registro con autofill + campo faltante, o recuperar contraseña, o login directo) antes de extraer datos — ver los estados en `web/src/lib/conectores/tipos.ts` (incluye `requires_password_recovery`, que no está en el spec original de estados). El avance ocurre **al leer** (`GET /api/perfil/conexiones/estado`), sin cola de jobs ni timers de servidor. Reemplazar una fuente simulada por automatización real o una API oficial es cambiar `catalogo.ts`/`guiones.ts`, no el resto de la app.
 
 **Normalización** — en vez de once tablas (`Income`, `Liability`, `Asset`...) hay una sola `hallazgos_financieros` con `tipo` discriminante (`TipoHallazgo` en `web/src/types/finance.ts`, junto a `Transaccion`/`Deuda`/`Plan`/`EstadoFinanciero`) y trazabilidad (`fuente`, `procedencia`, `confianza`, `periodo`). Un hallazgo nuevo nunca sobrescribe uno contradictorio de otra fuente — cada uno es su propia fila; `web/src/lib/perfil/normalizacion.ts` es quien agrega esto para el dashboard de `/panorama`, sin fundir cifras distintas en una sola.
+
+**Perfil portable V1** — `web/src/lib/perfil/perfil-financiero.ts` convierte
+transacciones, deudas, hallazgos y una meta de `planes` en el contrato
+`PerfilFinancieroV1`. La North Star del caso de demo es el porcentaje de
+ingreso declarado respaldado por datos observados. Para terceros,
+`PruebaCapacidadPagoV1` expone solo agregados de capacidad de arriendo, sin
+cuentas, comercios, documentos o IDs de evidencia. Web y MCP deben consumir
+`obtenerPerfilFinanciero()`; no pueden replicar las reglas.
 
 **Fuera de alcance, documentado a propósito, no implementado:** automatización real de portales, APIs oficiales de las entidades, reconocimiento facial/biométrico, OCR real, custodia de credenciales externas (vault), rate limiting, y listado de sesiones activas por usuario (se muestra solo la sesión actual en Configuración → Privacidad — enumerarlas todas necesita el Admin API de Supabase).
 

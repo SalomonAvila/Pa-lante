@@ -100,3 +100,105 @@ export type HallazgoFinanciero = {
   confianza: number;
   creadoEn: string;
 };
+
+/**
+ * Evidencia mínima que acompaña una cifra agregada. El perfil nunca expone el
+ * documento o la transacción cruda por defecto: conserva una referencia para
+ * que el dueño pueda auditarla dentro de Pa'lante.
+ */
+export type EvidenciaFinanciera = {
+  id: string;
+  fuente: string;
+  procedencia: ProcedenciaDato;
+  periodo: string | null;
+  confianza: number;
+  actualizadoEn: string;
+};
+
+export type UnidadMetrica = "COP" | "porcentaje" | "meses";
+
+/** Una cifra calculada junto con el método y la evidencia que la sustentan. */
+export type MetricaVerificable = {
+  valor: number | null;
+  unidad: UnidadMetrica;
+  confianza: number;
+  metodo: string;
+  evidencia: EvidenciaFinanciera[];
+  actualizadoEn: string;
+};
+
+/**
+ * Meta de acceso, no una solicitud ni una decisión crediticia. Pa'lante
+ * demuestra contexto; la entidad receptora conserva sus propias reglas.
+ */
+export type ObjetivoAccesoFinanciero = {
+  tipo: "demostrar_capacidad_arriendo";
+  descripcion: string;
+  canonMensualObjetivo: number;
+  ingresoMensualDeclarado: number;
+  fechaObjetivo: string | null;
+};
+
+export type EstadoPreparacionPerfil =
+  | "sin_datos"
+  | "requiere_datos"
+  | "listo_para_compartir";
+
+/**
+ * Contrato canónico que consumen la web, el chat y el MCP. Es una foto
+ * calculada y versionada; las observaciones originales siguen viviendo en
+ * transacciones/hallazgos y nunca se sobrescriben.
+ */
+export type PerfilFinancieroV1 = {
+  version: "1.0";
+  generadoEn: string;
+  periodo: { desde: string; hasta: string; mesesObservados: number };
+  ingresos: {
+    declarado: MetricaVerificable;
+    verificado: MetricaVerificable;
+    porcentajeVerificado: MetricaVerificable;
+    variacionMensual: MetricaVerificable;
+  };
+  flujo: {
+    gastoMensualObservado: MetricaVerificable;
+    flujoLibreObservado: MetricaVerificable;
+  };
+  obligaciones: {
+    deudaTotal: MetricaVerificable;
+    cuotaMensual: MetricaVerificable;
+    cargaFinanciera: MetricaVerificable;
+  };
+  objetivoAcceso: ObjetivoAccesoFinanciero | null;
+  contextoObjetivo: {
+    relacionCanonIngreso: MetricaVerificable;
+    /** Describe suficiencia de evidencia, nunca aprobación de un arriendo. */
+    estadoPreparacion: EstadoPreparacionPerfil;
+  };
+  calidadDatos: {
+    completitud: number;
+    confianza: number;
+    fuentesIndependientes: number;
+    datosFaltantes: string[];
+    advertencias: string[];
+  };
+};
+
+/**
+ * Vista de divulgación mínima para un tercero. Deliberadamente no contiene
+ * transacciones, comercios, números de cuenta, documentos ni evidencia IDs.
+ */
+export type PruebaCapacidadPagoV1 = {
+  version: "1.0";
+  proposito: "evaluar_capacidad_arriendo";
+  emitidoEn: string;
+  periodo: PerfilFinancieroV1["periodo"];
+  ingresoMensualVerificado: number | null;
+  porcentajeIngresoVerificado: number | null;
+  variacionMensualIngreso: number | null;
+  cargaFinanciera: number | null;
+  canonMensualObjetivo: number | null;
+  relacionCanonIngreso: number | null;
+  confianzaPerfil: number;
+  fuentesIndependientes: number;
+  estadoPreparacion: EstadoPreparacionPerfil;
+};
