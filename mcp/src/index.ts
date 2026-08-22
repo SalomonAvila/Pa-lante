@@ -1,17 +1,4 @@
 import { createServer } from "node:http";
-<<<<<<< HEAD
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { autenticar } from "@mcp/lib/auth";
-import { construirServidor } from "@mcp/server";
-
-const PUERTO = Number(process.env.MCP_PORT ?? 3333);
-
-/**
- * Entry point para desarrollo local. En Vercel el mismo servidor corre como
- * función serverless en mcp/api/mcp.ts — este archivo no se usa ahí, porque
- * Vercel nunca ejecuta un http.Server con .listen().
- */
-=======
 import { manejarMcp } from "@mcp/handler";
 
 /**
@@ -21,7 +8,6 @@ import { manejarMcp } from "@mcp/handler";
  */
 const PUERTO = Number(process.env.MCP_PORT ?? 3333);
 
->>>>>>> 7f21a4153f3fa4defcf1a5f312690a3fed5fc53d
 const servidorHttp = createServer(async (req, res) => {
   if (req.url !== "/mcp") {
     res.writeHead(404).end("No encontrado");
