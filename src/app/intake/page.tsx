@@ -1,4 +1,4 @@
-import { signIn } from "@/auth";
+import { ConectarGmailButton } from "@/components/auth/ConectarGmailButton";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { MascotFeedback } from "@/components/shared/MascotFeedback";
@@ -22,16 +22,7 @@ export default function IntakePage() {
           <p className="mt-1 text-sm text-on-surface-variant">
             Acceso restringido de solo lectura a notificaciones bancarias.
           </p>
-          <form
-            action={async () => {
-              "use server";
-              await signIn("google", { redirectTo: "/journey" });
-            }}
-          >
-            <Button type="submit" className="mt-4 w-full">
-              Conectar Gmail
-            </Button>
-          </form>
+          <ConectarGmailButton />
         </Card>
         <Card elevated className="flex-1">
           <h2 className="font-semibold text-on-surface">PDF</h2>

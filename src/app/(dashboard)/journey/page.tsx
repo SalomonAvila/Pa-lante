@@ -1,13 +1,13 @@
-import { auth } from "@/auth";
+import { getGoogleAccessToken } from "@/lib/supabase/session";
 import { listBankMessages } from "@/lib/gmail/listBankMessages";
 import { ProgressPath } from "@/components/dashboard/ProgressPath";
 import { MascotFeedback } from "@/components/shared/MascotFeedback";
 import { Card } from "@/components/ui/Card";
 
 async function GmailCheck() {
-  const session = await auth();
+  const accessToken = await getGoogleAccessToken();
 
-  if (!session?.accessToken) {
+  if (!accessToken) {
     return null;
   }
 
@@ -15,7 +15,7 @@ async function GmailCheck() {
   let failed = false;
 
   try {
-    emails = await listBankMessages(session.accessToken, { max: 5 });
+    emails = await listBankMessages(accessToken, { max: 5 });
   } catch {
     failed = true;
   }

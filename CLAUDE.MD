@@ -52,6 +52,15 @@ Plan          { meta, aporte_mensual, pasos[], supuestos[],
 - **Estilos:** Tailwind CSS
 - **Linting:** ESLint
 - **Gestor de paquetes:** bun
+- **Auth:** Supabase Auth (`@supabase/ssr`) — Google OAuth + Magic Link, sesión en cookies httpOnly. Reemplazó a NextAuth v5.
+
+### Decisiones de auth (hackathon)
+
+- Solo dos vías de entrada: **Google** y **enlace mágico por correo**. No hay registro, ni contraseñas, ni recuperación de clave — el login es también el signup.
+- El botón de Google pide `gmail.readonly` en el mismo consent. Supabase deja el token de Google en `session.provider_token` (ver `src/lib/supabase/session.ts`); **vive ~1h y no se refresca solo** — si expira, se reconecta desde `/intake`. Un usuario que entró por enlace mágico simplemente no tiene Gmail conectado.
+- Acceso abierto: cualquier correo puede entrar. El aislamiento de datos por usuario se hace con RLS en cualquier tabla que se agregue.
+- El `service_role key` nunca va al cliente ni a `.env.example`.
+- Rutas protegidas por `src/proxy.ts` (`/journey`, `/insights`, `/intake`); usa `getUser()`, no `getSession()`, porque valida el token contra Supabase.
 
 ## Estructura de carpetas objetivo
 
