@@ -4,6 +4,7 @@ Este archivo es la fuente de verdad del proyecto. Toda sesión de Claude Code de
 
 ---
 
+
 ## Los dos frentes
 
 Este proyecto tiene **dos productos distintos que comparten el mismo modelo de datos**:
