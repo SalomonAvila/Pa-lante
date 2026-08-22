@@ -3,12 +3,21 @@ import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/session";
 import { obtenerPerfilFinanciero } from "@/lib/perfil/obtener-perfil";
 import { crearPruebaCapacidadPago } from "@/lib/perfil/perfil-financiero";
+import { obtenerPanorama } from "@/lib/perfil/normalizacion";
+import { calcularCompletitud } from "@/lib/perfil/completitud";
 import { listarConexiones } from "@/lib/conectores/orquestador";
 import { CATALOGO_FUENTES } from "@/lib/conectores/catalogo";
 import { MetricaPrincipal } from "@/components/perfil/MetricaPrincipal";
 import { ESTADO_COLOR, ESTADO_LABEL } from "@/components/perfil/TablaFuentes";
 import { Table, Thead, Th, Tr, Td } from "@/components/ui/Table";
 import { ProgressBar } from "@/components/ui/ProgressBar";
+
+const ETIQUETA_FUENTE: Record<string, string> = {
+  conversacion: "Nos lo contaste tú",
+  gmail: "Detectado en tu correo",
+  pdf: "Detectado en un extracto",
+  manual: "Lo cargaste a mano",
+};
 
 function formatoCOP(valor: number): string {
   return new Intl.NumberFormat("es-CO", {
@@ -34,9 +43,11 @@ export default async function PanoramaPage() {
   if (!user) return null;
 
   const supabase = await createClient();
-  const [contexto, conexiones] = await Promise.all([
+  const [contexto, panorama, conexiones, completitud] = await Promise.all([
     obtenerPerfilFinanciero(supabase, user.id),
+    obtenerPanorama(supabase, user.id),
     listarConexiones(supabase, user.id),
+    calcularCompletitud(supabase, user.id),
   ]);
   const { perfil, objetivoAcceso } = contexto;
   const prueba = crearPruebaCapacidadPago(perfil, objetivoAcceso);
@@ -51,6 +62,19 @@ export default async function PanoramaPage() {
         <p className="mt-1 body-md text-on-surface-variant">
           Pa&apos;lante reúne tus fuentes y demuestra contexto sin entregar tus extractos completos.
         </p>
+        <div className="mt-4 flex flex-col gap-1 max-w-sm">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-container-low">
+            <div
+              className="h-full rounded-full bg-primary transition-all"
+              style={{ width: `${completitud.porcentaje}%` }}
+            />
+          </div>
+          <p className="text-xs text-on-surface-variant">
+            {completitud.porcentaje}% de tu perfil listo
+            {completitud.camposFaltantes.length > 0 &&
+              ` — todavía falta: ${completitud.camposFaltantes.join(", ")}`}
+          </p>
+        </div>
       </div>
 
       <section className="grid gap-8 rounded-xl border border-outline-variant bg-surface-container-lowest p-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(240px,0.7fr)] lg:p-8">
@@ -198,6 +222,32 @@ export default async function PanoramaPage() {
           </Link>
         </div>
       </section>
+
+      {panorama.hallazgos.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h2 className="label-md text-on-surface-variant">Todo lo que sabemos de ti</h2>
+          <Table>
+            <Thead>
+              <tr>
+                <Th>Tipo</Th>
+                <Th>Cómo lo sabemos</Th>
+                <Th>Procedencia</Th>
+                <Th>Periodo</Th>
+              </tr>
+            </Thead>
+            <tbody>
+              {panorama.hallazgos.map((h) => (
+                <Tr key={h.id}>
+                  <Td className="capitalize">{h.tipo.replace(/_/g, " ")}</Td>
+                  <Td>{ETIQUETA_FUENTE[h.fuente] ?? h.fuente}</Td>
+                  <Td className="capitalize">{h.procedencia}</Td>
+                  <Td>{h.periodo ?? "—"}</Td>
+                </Tr>
+              ))}
+            </tbody>
+          </Table>
+        </section>
+      )}
 
       <section className="flex flex-col gap-3">
         <div className="flex items-baseline justify-between">

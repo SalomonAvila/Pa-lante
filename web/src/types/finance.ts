@@ -33,7 +33,9 @@ export type TipoHallazgo =
   | "tax_profile"
   | "company"
   | "fine"
-  | "account";
+  | "account"
+  /** La meta/objetivo financiero que el usuario declara en la conversación. */
+  | "goal";
 
 /**
  * declarado = lo dijo el usuario; observado = vino de una fuente/documento;
