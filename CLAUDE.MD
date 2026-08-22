@@ -204,7 +204,7 @@ interface EstadoFinanciero {
 
 ## Auth (decisiones de hackathon)
 
-- **Cuenta semilla para demos: `palante.platanus@gmail.com`.** Se entra por enlace mágico (nunca por Google, para que la cuenta de demo no lea un Gmail real). Sus datos son ficticios y se cargan con `supabase/seed.sql`. Nunca demostrar con datos personales del equipo.
+- **Cuenta semilla para demos: `palante.platanus@gmail.com`.** Buzón creado para la hackathon, sin correo real dentro, así que se puede entrar por enlace mágico o por Google indistintamente. Sus datos financieros son ficticios y se cargan con `supabase/seed.sql`. Nunca demostrar con la cuenta personal de nadie del equipo.
 
 - Dos vías de entrada: **Google OAuth** y **enlace mágico por correo**. No hay registro con contraseña.
 - El botón de Google pide `gmail.readonly` en el mismo consent. El token de Google queda en `session.provider_token` (ver `src/lib/supabase/session.ts`). **Vive ~1h y no se refresca solo** — si expira, el usuario reconecta desde `/intake`.

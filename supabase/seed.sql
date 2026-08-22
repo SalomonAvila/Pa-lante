@@ -3,9 +3,8 @@
 --
 -- Cuenta semilla del equipo: palante.platanus@gmail.com
 --
---   1. Entra UNA vez a la app con ese correo, por enlace mágico (no por
---      Google: así la cuenta de demo nunca lee un Gmail real, que es
---      justamente lo que PRODUCT.md prohíbe mostrar en vivo).
+--   1. Entra UNA vez a la app con ese correo (enlace mágico o Google, da
+--      igual: el buzón se creó para la hackathon y no tiene correo real).
 --   2. Corre este archivo en el SQL Editor de Supabase.
 --
 -- Es idempotente: borra las transacciones y deudas de esta cuenta antes de
