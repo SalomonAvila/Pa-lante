@@ -2,26 +2,67 @@
 
 import { FormEvent, useCallback, useState } from "react";
 import Link from "next/link";
-import { ConversationProvider, useConversation } from "@elevenlabs/react";
+import { useRouter } from "next/navigation";
+import { ConversationProvider, useConversation, useConversationClientTool } from "@elevenlabs/react";
 import { MascotFeedback } from "@/components/shared/MascotFeedback";
 import { ConectarGmailButton } from "@/components/auth/ConectarGmailButton";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { FootstepTrail } from "./FootstepTrail";
+import type { Completitud } from "@/lib/perfil/completitud";
+import type { TipoHallazgo } from "@/types/finance";
 
 const AGENT_ID = process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID;
 
+/** Cuánto necesitamos saber antes de dar por terminada la conversación. */
+const UMBRAL_COMPLETITUD = 80;
+
 type Turno = { role: "user" | "agent"; text: string };
 
+async function consultarCompletitud(): Promise<Completitud> {
+  const res = await fetch("/api/perfil/completitud");
+  if (!res.ok) return { porcentaje: 0, camposFaltantes: [] };
+  return res.json();
+}
+
 function OnboardingInner() {
+  const router = useRouter();
   const [transcript, setTranscript] = useState<Turno[]>([]);
   const [texto, setTexto] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [completitud, setCompletitud] = useState<Completitud | null>(null);
 
   const conversation = useConversation({
     onMessage: ({ message, role }) =>
       setTranscript((prev) => [...prev, { role, text: message }]),
     onError: (message) => setError(message),
+  });
+
+  // El agente llama esto por cada dato que extrae de la respuesta del
+  // usuario — se guarda de inmediato, no al terminar la conversación.
+  useConversationClientTool("guardar_hallazgo", async (params) => {
+    const { tipo, datos, periodo } = params as {
+      tipo: TipoHallazgo;
+      datos: Record<string, unknown>;
+      periodo?: string;
+    };
+    await fetch("/api/perfil/conversacion", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tipo, datos, periodo }),
+    });
+    const nueva = await consultarCompletitud();
+    setCompletitud(nueva);
+    return JSON.stringify(nueva);
+  });
+
+  // El agente lo llama después de guardar un dato, para decidir la siguiente
+  // pregunta con el % y los campos que aún faltan — no hay guion fijo, cada
+  // pregunta se decide con esto en la mano.
+  useConversationClientTool("consultar_completitud", async () => {
+    const nueva = await consultarCompletitud();
+    setCompletitud(nueva);
+    return JSON.stringify(nueva);
   });
 
   const conectado = conversation.status === "connected";
@@ -35,7 +76,15 @@ function OnboardingInner() {
     setError(null);
     try {
       await navigator.mediaDevices.getUserMedia({ audio: true });
-      await conversation.startSession({ agentId: AGENT_ID });
+      const inicial = await consultarCompletitud();
+      setCompletitud(inicial);
+      await conversation.startSession({
+        agentId: AGENT_ID,
+        dynamicVariables: {
+          porcentaje_completado: inicial.porcentaje,
+          campos_faltantes: inicial.camposFaltantes.join(", ") || "ninguno todavía",
+        },
+      });
     } catch {
       setError("No pudimos acceder al micrófono. Puedes escribir en su lugar.");
     }
@@ -48,7 +97,16 @@ function OnboardingInner() {
     }
     setError(null);
     try {
-      await conversation.startSession({ agentId: AGENT_ID, connectionType: "websocket" });
+      const inicial = await consultarCompletitud();
+      setCompletitud(inicial);
+      await conversation.startSession({
+        agentId: AGENT_ID,
+        connectionType: "websocket",
+        dynamicVariables: {
+          porcentaje_completado: inicial.porcentaje,
+          campos_faltantes: inicial.camposFaltantes.join(", ") || "ninguno todavía",
+        },
+      });
     } catch {
       setError("No pudimos iniciar la conversación. Intenta de nuevo.");
     }
@@ -62,7 +120,12 @@ function OnboardingInner() {
     setTexto("");
   }
 
-  const yaHayDiagnostico = transcript.some((t) => t.role === "agent");
+  async function terminarYVerPerfil() {
+    await conversation.endSession();
+    router.push("/panorama");
+  }
+
+  const suficiente = (completitud?.porcentaje ?? 0) >= UMBRAL_COMPLETITUD;
 
   return (
     <div className="flex flex-1 flex-col items-center gap-8 bg-surface px-6 py-16">
@@ -124,6 +187,20 @@ function OnboardingInner() {
 
       {conectado && (
         <div className="flex w-full max-w-md flex-col gap-3">
+          {completitud && (
+            <div className="flex flex-col gap-1">
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-container-low">
+                <div
+                  className="h-full rounded-full bg-primary transition-all"
+                  style={{ width: `${completitud.porcentaje}%` }}
+                />
+              </div>
+              <p className="text-xs text-on-surface-variant">
+                {completitud.porcentaje}% de tu perfil listo
+              </p>
+            </div>
+          )}
+
           <div className="flex max-h-64 flex-col gap-2 overflow-y-auto">
             {transcript.map((turno, i) => (
               <div
@@ -151,20 +228,26 @@ function OnboardingInner() {
             </Button>
           </form>
 
-          <button
-            type="button"
-            onClick={() => conversation.endSession()}
-            className="self-center label-md text-on-surface-variant underline"
-          >
-            Terminar conversación
-          </button>
+          {suficiente ? (
+            <Button type="button" onClick={terminarYVerPerfil} className="self-center">
+              Ya sé suficiente — ver mi información
+            </Button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => conversation.endSession()}
+              className="self-center label-md text-on-surface-variant underline"
+            >
+              Terminar conversación
+            </button>
+          )}
         </div>
       )}
 
-      {yaHayDiagnostico && (
+      {transcript.length > 0 && (
         <div className="flex w-full max-w-md flex-col gap-4 border-t border-outline-variant pt-8">
           <p className="text-center body-md text-on-surface-variant">
-            Con esto armamos un plan hecho a tu medida. Para verlo, conecta tu contexto real:
+            También puedes sumar estas fuentes cuando quieras — no reemplazan la conversación, se suman a tu perfil:
           </p>
           <div className="flex flex-col gap-4 sm:flex-row">
             <Card elevated className="flex-1">
