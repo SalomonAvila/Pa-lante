@@ -11,7 +11,7 @@ Este proyecto tiene **dos productos distintos que comparten el mismo modelo de d
 
 | Frente | Qué es | Quién lo usa |
 |--------|--------|--------------|
-| **Web app** (Next.js) | Interfaz donde el usuario conecta sus datos, ve su diagnóstico y sigue su plan financiero personalizado | El usuario final |
+| **Web app** (Next.js) | Donde el usuario conecta fuentes, ve su cobertura y administra quién accede a sus datos | El dueño de los datos |
 | **Servidor MCP** | Expone el contexto financiero normalizado del usuario como herramientas consumibles por agentes de IA externos | Otros agentes, integraciones, demos del track Access |
 
 Ambos frentes leen del mismo modelo de datos (Supabase). El MCP no tiene UI — solo expone tools con el contexto ya procesado.
@@ -20,16 +20,42 @@ Ambos frentes leen del mismo modelo de datos (Supabase). El MCP no tiene UI — 
 
 ## Objetivo del producto
 
-Herramienta que convierte el contexto financiero disperso de una persona (correos bancarios, PDFs de extractos) en un **plan financiero personalizado, dinámico y con seguimiento automático**.
+**Pa'lante es infraestructura de datos financieros personales.** Somos
+especialistas en tres cosas, en este orden:
 
-**Problema central:** el contexto financiero de una persona existe, pero está atrapado en 200 correos y 12 PDFs con clave. Ningún sistema puede leerlo ni actuarlo.
+1. **Extraer** el contexto financiero de una persona de la forma más sencilla
+   posible, desde tantas fuentes como se pueda.
+2. **Normalizar** todo eso a un modelo único, trazable y versionado.
+3. **Distribuir** ese perfil por API y por servidor MCP, para que cualquier
+   agente o sistema de IA lo consuma con permiso del dueño.
 
-**A quién sirve:** cualquier persona, sin importar su situación. El diagnóstico decide automáticamente su ruta:
-- Persona endeudada → ruta *Salida de deudas*
-- Persona con flujo negativo o gasto sin categorizar → ruta *Visibilidad*
-- Persona con flujo positivo sin deuda cara → ruta *Meta de ahorro / capacidad de inversión*
+**Problema central:** el contexto financiero de una persona existe, pero está
+atrapado en correos, PDFs con clave y portales de entidades. Ningún sistema
+puede leerlo, y menos actuarlo. Nosotros somos el habilitador.
 
----
+**La métrica del producto es la cobertura:** qué porcentaje del contexto
+financiero de una persona logramos capturar y verificar.
+
+### Dónde entra la capa de expertos
+
+El núcleo no aconseja: entrega datos con procedencia y confianza. Los once
+expertos y el chat de `/asistente` **no son el producto** — son la
+**demostración** de lo que un agente externo puede construir encima del MCP,
+y por eso viven fuera del núcleo (`web/src/lib/inteligencia/`, expuestos como
+tools del MCP en `mcp/src/tools/`). Reglas que esto impone:
+
+- `PerfilFinancieroV1`, `CoberturaPerfil` y las vistas de divulgación **no
+  cambian** para acomodar a un experto. Si un experto necesita un campo nuevo
+  en el núcleo, la respuesta por defecto es que no.
+- Un experto solo lee por las mismas puertas que un tercero (`datos.ts` filtra
+  por `user_id`; el MCP registra cada llamada en `mcp_accesos`). Nada de rutas
+  privilegiadas.
+- Quitar la capa de expertos completa debe dejar el producto en pie. Hoy casi:
+  el núcleo web (`api/v1/*`, `perfil-financiero.ts`, `obtener-perfil.ts`) no
+  importa nada de `inteligencia/`, pero dos tools *de datos* del MCP
+  (`buscar-transacciones`, `obtener-plan`) sí leen `inteligencia/datos.ts`.
+  `datos.ts` no usa el LLM — es acceso a datos puro — así que la dirección de
+  la dependencia está invertida. Pendiente: moverlo fuera de `inteligencia/`.
 
 ## Flujo completo del producto
 
@@ -220,6 +246,11 @@ interface EstadoFinanciero {
 
 ## Sistema de inteligencia financiera conversacional (Fase 1)
 
+> **Alcance:** esta capa es la demostración del MCP, no el núcleo del producto
+> — ver "Dónde entra la capa de expertos" arriba. El consejo lo da el agente
+> que consume Pa'lante; Pa'lante entrega los datos con los que se construye.
+
+
 Además del diagnóstico por reglas explícitas, existe una capa conversacional que interpreta lo
 que el usuario necesita, decide qué expertos consultar (en paralelo cuando corresponde), y
 sintetiza una respuesta citando procedencia y nivel de confianza. Vive en
@@ -379,20 +410,49 @@ Además del flujo original (Gmail/PDF → `Transaccion` → diagnóstico → pla
 
 ## Estado actual del proyecto
 
-- [x] Next.js inicializado con TypeScript, ESLint, Tailwind, App Router y `src/`
-- [x] Supabase Auth configurado (Google OAuth + Magic Link)
-- [ ] `.env.local` configurado con variables reales
-- [ ] Primer commit limpio hecho
-- [ ] Prettier + Husky/lint-staged configurados
-- [ ] Estructura de carpetas `web/` y `mcp/` creada (monorepo con workspaces de Bun, `mcp/` con un tool de ejemplo `get_transacciones`)
-- [ ] Parser: correo/PDF → `Transaccion` (testeado con fixtures)
-- [ ] `EstadoFinanciero` calculado desde transacciones
-- [ ] Router de diagnóstico (umbrales explícitos en código)
-- [ ] Motor de generación de plan (prompt → `NodoPlan[]`)
-- [ ] UI de carriles paralelos (web)
-- [ ] Servidor MCP con tools sobre el contexto normalizado
-- [ ] Gmail OAuth en vivo como fuente intercambiable
-- [ ] Integración Belvo/Finerio (opcional, post-MVP)
+> Verificado el 2026-08-22 contra el árbol de archivos, `tsc --noEmit`, `bun
+> test` y `supabase migration list`. Si vuelves a tocar esta lista, verifica —
+> un checklist desactualizado acá ya mandó una sesión entera a construir cosas
+> que ya existían.
+
+**Base**
+- [x] Monorepo `web/` + `mcp/` con workspaces de Bun
+- [x] Supabase Auth (Google OAuth + enlace mágico + correo/contraseña)
+- [x] 6 migraciones aplicadas en remoto (`supabase migration list` sin pendientes)
+- [x] `web/` y `mcp/` compilan con `tsc --noEmit` en cero errores; 21 pruebas en verde
+- [ ] Prettier + Husky/lint-staged (solo ESLint hoy)
+
+**Extracción**
+- [x] 13 conectores simulados (`web/src/lib/conectores/catalogo.ts`)
+- [x] Registro, verificación de identidad y consentimientos separados
+- [x] Onboarding por voz con ElevenLabs (`/intake`) escribiendo hallazgos hecho a hecho
+- [ ] **Parser correo/PDF → `Transaccion`: `web/src/lib/parser/index.ts` es un stub
+      que devuelve `[]`.** No hay fixtures de correos/PDFs — `fixtures/` solo
+      tiene los `.md` de conocimiento para el RAG
+- [ ] Gmail OAuth en vivo como fuente
+- [ ] Automatización real o API oficial de alguna entidad
+
+**Normalización**
+- [x] `hallazgos_financieros` con trazabilidad y sin sobrescritura
+- [x] `PerfilFinancieroV1` general + vista de divulgación derivada
+- [x] `cobertura` por dominio y fuente
+- [ ] Deduplicación entre fuentes (`hash_dedupe`)
+
+**Distribución**
+- [x] Servidor MCP con Bearer token hasheado y bitácora de accesos
+- [x] 12 tools registradas en `mcp/src/handler.ts`
+- [x] API REST `/api/v1/*` con scopes por token
+- [ ] Exportación completa de los datos del usuario
+
+**Capa de demostración (expertos)** — ver "Dónde entra la capa de expertos"
+- [x] Orquestador con `claude-opus-5`, streaming SSE, y 11 expertos registrados
+- [x] Ledger de auditoría (`analisis`) y tiers de confianza
+- [x] 7 documentos de conocimiento en `fixtures/conocimiento/`
+- [ ] **RAG sin ingestar**: `bun run rag:ingest` requiere `VOYAGE_API_KEY`.
+      Sin ella `buscar_conocimiento_financiero` responde "no disponible"
+- [ ] **Proveedor de datos de mercado sin elegir**: `obtenerProveedorMercado()`
+      devuelve `null` a propósito, así que el experto de `acciones` siempre
+      responde que no tiene proveedor conectado
 
 ---
 

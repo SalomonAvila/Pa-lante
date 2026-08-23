@@ -1,6 +1,6 @@
 import { getGmailClient } from "@/lib/gmail/client";
 
-// Dominios conocidos de los bancos que menciona CLAUDE.MD. Son los dominios
+// Dominios conocidos de los bancos que menciona CLAUDE.md. Son los dominios
 // públicos reales de cada entidad, pero el remitente exacto de notificación
 // (buzón específico) varía y debe verificarse contra correos reales de
 // prueba antes de confiar en este filtro para producción.
