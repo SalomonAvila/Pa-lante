@@ -1,0 +1,274 @@
+<title>Marca Pa'lante</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+  /* Compromiso deliberado con un solo tema: estos logos se juzgan sobre el
+     negro real del producto, no sobre el fondo del visor. */
+  :root {
+    --bg: #000; --panel: #0c0c0d; --line: rgba(255,255,255,.12);
+    --text: #fff; --dim: #9a9a9d; --faint: #67676b; --amber: #f2a93c;
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text);
+    font-family:Inter,system-ui,sans-serif; font-size:15px; line-height:1.6;
+    -webkit-font-smoothing:antialiased; }
+  .wrap { max-width:940px; margin:0 auto; padding:0 22px; }
+  .lbl { font-family:"IBM Plex Mono",monospace; font-size:10px; letter-spacing:.16em;
+    text-transform:uppercase; color:var(--faint); display:block; margin-bottom:8px; }
+  code { font-family:"IBM Plex Mono",monospace; font-size:.92em; color:#d5d5d8; }
+
+  header.top { padding:64px 0 40px; border-bottom:1px solid var(--line); }
+  header.top h1 { font-size:clamp(2rem,4.6vw,2.9rem); line-height:1.06; letter-spacing:-.035em;
+    font-weight:700; margin:0 0 16px; max-width:20ch; text-wrap:balance; }
+  header.top p { color:var(--dim); max-width:62ch; margin:0 0 10px; }
+
+  .diag { display:grid; gap:14px; grid-template-columns:1fr; margin:30px 0 0; }
+  @media (min-width:700px){ .diag { grid-template-columns:repeat(3,1fr); } }
+  .diag div { border:1px solid var(--line); border-radius:10px; padding:14px 16px; background:var(--panel); }
+  .diag b { display:block; font-size:13px; margin-bottom:3px; }
+  .diag span { color:var(--dim); font-size:13px; }
+
+  main { padding:44px 0 90px; display:flex; flex-direction:column; gap:26px; }
+
+  .card { border:1px solid var(--line); border-radius:14px; background:var(--panel); overflow:hidden; }
+  .card-h { padding:22px 22px 0; }
+  .card-h h2 { font-size:1.32rem; letter-spacing:-.02em; font-weight:600; margin:0 0 6px; }
+  .concepto { color:var(--dim); margin:0; max-width:62ch; }
+  .badge { font-family:"IBM Plex Mono",monospace; font-size:10px; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--amber); border:1px solid rgba(242,169,60,.45);
+    border-radius:999px; padding:3px 9px; vertical-align:middle; margin-left:8px; }
+
+  .showcase { display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--line);
+    margin:22px 0 0; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+  .stage { position:relative; display:grid; place-items:center; padding:44px 10px 30px; }
+  .stage-dark { background:#000; color:#fff; }
+  .stage-light { background:#fff; color:#000; }
+  .stage-l { font-family:"IBM Plex Mono",monospace; font-size:10px; letter-spacing:.14em;
+    text-transform:uppercase; margin-top:18px; opacity:.42; }
+  .mark-lg { display:grid; place-items:center; }
+
+  .row { display:grid; grid-template-columns:1fr; gap:26px; padding:22px; }
+  @media (min-width:700px){ .row { grid-template-columns:1.35fr 1fr; } }
+  .sizes-in { display:flex; align-items:center; gap:20px; flex-wrap:wrap; }
+  .pill { display:grid; place-items:center; width:46px; height:46px; border-radius:50%;
+    background:#fff; color:#000; flex:0 0 auto; }
+  .size-item { display:flex; flex-direction:column; align-items:center; gap:7px; }
+  .size-item span { font-family:"IBM Plex Mono",monospace; font-size:10px; color:var(--faint); }
+  .on-dark { display:grid; place-items:center; width:34px; height:34px; color:#fff; }
+  .hint { display:block; margin-top:12px; color:var(--faint); font-size:12.5px; }
+
+  .lock-in { display:flex; align-items:center; gap:11px; }
+  .wordmark { font-size:21px; font-weight:700; letter-spacing:-.03em; }
+
+  .pros { display:grid; grid-template-columns:1fr; gap:0; border-top:1px solid var(--line); }
+  @media (min-width:700px){ .pros { grid-template-columns:1fr 1fr; } }
+  .pro { padding:18px 22px; }
+  .pro + .pro { border-top:1px solid var(--line); }
+  @media (min-width:700px){ .pro + .pro { border-top:none; border-left:1px solid var(--line); } }
+  .pro p { margin:0; color:var(--dim); font-size:14px; }
+
+  footer { border-top:1px solid var(--line); padding:26px 0 60px; }
+  footer h3 { font-size:1.05rem; margin:0 0 8px; font-weight:600; }
+  footer p { color:var(--dim); max-width:64ch; margin:0 0 10px; }
+  a { color:var(--amber); }
+  :focus-visible { outline:2px solid var(--amber); outline-offset:3px; }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <h1>Cuatro caminos para la marca</h1>
+    <p>
+      La hormiga no falla por gusto: falla por medida. Vive en un círculo blanco
+      de 46&nbsp;px y como favicon de 16&nbsp;px, y a esos tamaños una ilustración
+      con patas y antenas se vuelve una mancha. Además es el único elemento cálido
+      en una interfaz que ya es blanco y negro puro.
+    </p>
+    <p>
+      Las cuatro propuestas están dibujadas como vectores monocromos y probadas
+      en los tamaños reales de la aplicación.
+    </p>
+    <div class="diag">
+      <div><b>46&nbsp;px</b><span>La píldora de la barra superior</span></div>
+      <div><b>16&nbsp;px</b><span>El favicon de la pestaña</span></div>
+      <div><b>Monocromo</b><span>Un solo color, sobre negro y sobre blanco</span></div>
+    </div>
+  </header>
+
+  <main>
+    <article class="card" id="hormiga">
+      <div class="card-h">
+        <h2>La hormiga, traducida</h2>
+        <p class="concepto">La misma hormiga, redibujada sobre la rejilla de píxeles del titular de la landing. Deja de ser una ilustración cálida y pasa a hablar el idioma del campo de dígitos.</p>
+      </div>
+
+      <div class="showcase">
+        <div class="stage stage-dark">
+          <div class="mark-lg"><svg viewBox="0 0 16 16" width="104" height="104" aria-hidden="true" ><g fill="currentColor"><rect x="13" y="2" width="1" height="1"/><rect x="14" y="2" width="1" height="1"/><rect x="12" y="3" width="1" height="1"/><rect x="9" y="4" width="1" height="1"/><rect x="10" y="4" width="1" height="1"/><rect x="11" y="4" width="1" height="1"/><rect x="8" y="5" width="1" height="1"/><rect x="9" y="5" width="1" height="1"/><rect x="10" y="5" width="1" height="1"/><rect x="11" y="5" width="1" height="1"/><rect x="12" y="5" width="1" height="1"/><rect x="7" y="6" width="1" height="1"/><rect x="8" y="6" width="1" height="1"/><rect x="9" y="6" width="1" height="1"/><rect x="10" y="6" width="1" height="1"/><rect x="2" y="7" width="1" height="1"/><rect x="3" y="7" width="1" height="1"/><rect x="4" y="7" width="1" height="1"/><rect x="5" y="7" width="1" height="1"/><rect x="6" y="7" width="1" height="1"/><rect x="8" y="7" width="1" height="1"/><rect x="9" y="7" width="1" height="1"/><rect x="1" y="8" width="1" height="1"/><rect x="2" y="8" width="1" height="1"/><rect x="3" y="8" width="1" height="1"/><rect x="4" y="8" width="1" height="1"/><rect x="5" y="8" width="1" height="1"/><rect x="6" y="8" width="1" height="1"/><rect x="7" y="8" width="1" height="1"/><rect x="1" y="9" width="1" height="1"/><rect x="2" y="9" width="1" height="1"/><rect x="3" y="9" width="1" height="1"/><rect x="4" y="9" width="1" height="1"/><rect x="5" y="9" width="1" height="1"/><rect x="6" y="9" width="1" height="1"/><rect x="7" y="9" width="1" height="1"/><rect x="2" y="10" width="1" height="1"/><rect x="3" y="10" width="1" height="1"/><rect x="4" y="10" width="1" height="1"/><rect x="5" y="10" width="1" height="1"/><rect x="6" y="10" width="1" height="1"/><rect x="2" y="11" width="1" height="1"/><rect x="5" y="11" width="1" height="1"/><rect x="8" y="11" width="1" height="1"/><rect x="1" y="12" width="1" height="1"/><rect x="5" y="12" width="1" height="1"/><rect x="9" y="12" width="1" height="1"/></g></svg></div>
+          <span class="stage-l">sobre negro</span>
+        </div>
+        <div class="stage stage-light">
+          <div class="mark-lg"><svg viewBox="0 0 16 16" width="104" height="104" aria-hidden="true" ><g fill="currentColor"><rect x="13" y="2" width="1" height="1"/><rect x="14" y="2" width="1" height="1"/><rect x="12" y="3" width="1" height="1"/><rect x="9" y="4" width="1" height="1"/><rect x="10" y="4" width="1" height="1"/><rect x="11" y="4" width="1" height="1"/><rect x="8" y="5" width="1" height="1"/><rect x="9" y="5" width="1" height="1"/><rect x="10" y="5" width="1" height="1"/><rect x="11" y="5" width="1" height="1"/><rect x="12" y="5" width="1" height="1"/><rect x="7" y="6" width="1" height="1"/><rect x="8" y="6" width="1" height="1"/><rect x="9" y="6" width="1" height="1"/><rect x="10" y="6" width="1" height="1"/><rect x="2" y="7" width="1" height="1"/><rect x="3" y="7" width="1" height="1"/><rect x="4" y="7" width="1" height="1"/><rect x="5" y="7" width="1" height="1"/><rect x="6" y="7" width="1" height="1"/><rect x="8" y="7" width="1" height="1"/><rect x="9" y="7" width="1" height="1"/><rect x="1" y="8" width="1" height="1"/><rect x="2" y="8" width="1" height="1"/><rect x="3" y="8" width="1" height="1"/><rect x="4" y="8" width="1" height="1"/><rect x="5" y="8" width="1" height="1"/><rect x="6" y="8" width="1" height="1"/><rect x="7" y="8" width="1" height="1"/><rect x="1" y="9" width="1" height="1"/><rect x="2" y="9" width="1" height="1"/><rect x="3" y="9" width="1" height="1"/><rect x="4" y="9" width="1" height="1"/><rect x="5" y="9" width="1" height="1"/><rect x="6" y="9" width="1" height="1"/><rect x="7" y="9" width="1" height="1"/><rect x="2" y="10" width="1" height="1"/><rect x="3" y="10" width="1" height="1"/><rect x="4" y="10" width="1" height="1"/><rect x="5" y="10" width="1" height="1"/><rect x="6" y="10" width="1" height="1"/><rect x="2" y="11" width="1" height="1"/><rect x="5" y="11" width="1" height="1"/><rect x="8" y="11" width="1" height="1"/><rect x="1" y="12" width="1" height="1"/><rect x="5" y="12" width="1" height="1"/><rect x="9" y="12" width="1" height="1"/></g></svg></div>
+          <span class="stage-l">sobre blanco</span>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="sizes">
+          <span class="lbl">Tamaños reales</span>
+          <div class="sizes-in">
+            <div class="pill"><svg viewBox="0 0 16 16" width="26" height="26" aria-hidden="true" ><g fill="currentColor"><rect x="13" y="2" width="1" height="1"/><rect x="14" y="2" width="1" height="1"/><rect x="12" y="3" width="1" height="1"/><rect x="9" y="4" width="1" height="1"/><rect x="10" y="4" width="1" height="1"/><rect x="11" y="4" width="1" height="1"/><rect x="8" y="5" width="1" height="1"/><rect x="9" y="5" width="1" height="1"/><rect x="10" y="5" width="1" height="1"/><rect x="11" y="5" width="1" height="1"/><rect x="12" y="5" width="1" height="1"/><rect x="7" y="6" width="1" height="1"/><rect x="8" y="6" width="1" height="1"/><rect x="9" y="6" width="1" height="1"/><rect x="10" y="6" width="1" height="1"/><rect x="2" y="7" width="1" height="1"/><rect x="3" y="7" width="1" height="1"/><rect x="4" y="7" width="1" height="1"/><rect x="5" y="7" width="1" height="1"/><rect x="6" y="7" width="1" height="1"/><rect x="8" y="7" width="1" height="1"/><rect x="9" y="7" width="1" height="1"/><rect x="1" y="8" width="1" height="1"/><rect x="2" y="8" width="1" height="1"/><rect x="3" y="8" width="1" height="1"/><rect x="4" y="8" width="1" height="1"/><rect x="5" y="8" width="1" height="1"/><rect x="6" y="8" width="1" height="1"/><rect x="7" y="8" width="1" height="1"/><rect x="1" y="9" width="1" height="1"/><rect x="2" y="9" width="1" height="1"/><rect x="3" y="9" width="1" height="1"/><rect x="4" y="9" width="1" height="1"/><rect x="5" y="9" width="1" height="1"/><rect x="6" y="9" width="1" height="1"/><rect x="7" y="9" width="1" height="1"/><rect x="2" y="10" width="1" height="1"/><rect x="3" y="10" width="1" height="1"/><rect x="4" y="10" width="1" height="1"/><rect x="5" y="10" width="1" height="1"/><rect x="6" y="10" width="1" height="1"/><rect x="2" y="11" width="1" height="1"/><rect x="5" y="11" width="1" height="1"/><rect x="8" y="11" width="1" height="1"/><rect x="1" y="12" width="1" height="1"/><rect x="5" y="12" width="1" height="1"/><rect x="9" y="12" width="1" height="1"/></g></svg></div>
+            <div class="size-item"><div class="on-dark"><svg viewBox="0 0 16 16" width="24" height="24" aria-hidden="true" ><g fill="currentColor"><rect x="13" y="2" width="1" height="1"/><rect x="14" y="2" width="1" height="1"/><rect x="12" y="3" width="1" height="1"/><rect x="9" y="4" width="1" height="1"/><rect x="10" y="4" width="1" height="1"/><rect x="11" y="4" width="1" height="1"/><rect x="8" y="5" width="1" height="1"/><rect x="9" y="5" width="1" height="1"/><rect x="10" y="5" width="1" height="1"/><rect x="11" y="5" width="1" height="1"/><rect x="12" y="5" width="1" height="1"/><rect x="7" y="6" width="1" height="1"/><rect x="8" y="6" width="1" height="1"/><rect x="9" y="6" width="1" height="1"/><rect x="10" y="6" width="1" height="1"/><rect x="2" y="7" width="1" height="1"/><rect x="3" y="7" width="1" height="1"/><rect x="4" y="7" width="1" height="1"/><rect x="5" y="7" width="1" height="1"/><rect x="6" y="7" width="1" height="1"/><rect x="8" y="7" width="1" height="1"/><rect x="9" y="7" width="1" height="1"/><rect x="1" y="8" width="1" height="1"/><rect x="2" y="8" width="1" height="1"/><rect x="3" y="8" width="1" height="1"/><rect x="4" y="8" width="1" height="1"/><rect x="5" y="8" width="1" height="1"/><rect x="6" y="8" width="1" height="1"/><rect x="7" y="8" width="1" height="1"/><rect x="1" y="9" width="1" height="1"/><rect x="2" y="9" width="1" height="1"/><rect x="3" y="9" width="1" height="1"/><rect x="4" y="9" width="1" height="1"/><rect x="5" y="9" width="1" height="1"/><rect x="6" y="9" width="1" height="1"/><rect x="7" y="9" width="1" height="1"/><rect x="2" y="10" width="1" height="1"/><rect x="3" y="10" width="1" height="1"/><rect x="4" y="10" width="1" height="1"/><rect x="5" y="10" width="1" height="1"/><rect x="6" y="10" width="1" height="1"/><rect x="2" y="11" width="1" height="1"/><rect x="5" y="11" width="1" height="1"/><rect x="8" y="11" width="1" height="1"/><rect x="1" y="12" width="1" height="1"/><rect x="5" y="12" width="1" height="1"/><rect x="9" y="12" width="1" height="1"/></g></svg></div><span>24</span></div>
+            <div class="size-item"><div class="on-dark"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" ><g fill="currentColor"><rect x="13" y="2" width="1" height="1"/><rect x="14" y="2" width="1" height="1"/><rect x="12" y="3" width="1" height="1"/><rect x="9" y="4" width="1" height="1"/><rect x="10" y="4" width="1" height="1"/><rect x="11" y="4" width="1" height="1"/><rect x="8" y="5" width="1" height="1"/><rect x="9" y="5" width="1" height="1"/><rect x="10" y="5" width="1" height="1"/><rect x="11" y="5" width="1" height="1"/><rect x="12" y="5" width="1" height="1"/><rect x="7" y="6" width="1" height="1"/><rect x="8" y="6" width="1" height="1"/><rect x="9" y="6" width="1" height="1"/><rect x="10" y="6" width="1" height="1"/><rect x="2" y="7" width="1" height="1"/><rect x="3" y="7" width="1" height="1"/><rect x="4" y="7" width="1" height="1"/><rect x="5" y="7" width="1" height="1"/><rect x="6" y="7" width="1" height="1"/><rect x="8" y="7" width="1" height="1"/><rect x="9" y="7" width="1" height="1"/><rect x="1" y="8" width="1" height="1"/><rect x="2" y="8" width="1" height="1"/><rect x="3" y="8" width="1" height="1"/><rect x="4" y="8" width="1" height="1"/><rect x="5" y="8" width="1" height="1"/><rect x="6" y="8" width="1" height="1"/><rect x="7" y="8" width="1" height="1"/><rect x="1" y="9" width="1" height="1"/><rect x="2" y="9" width="1" height="1"/><rect x="3" y="9" width="1" height="1"/><rect x="4" y="9" width="1" height="1"/><rect x="5" y="9" width="1" height="1"/><rect x="6" y="9" width="1" height="1"/><rect x="7" y="9" width="1" height="1"/><rect x="2" y="10" width="1" height="1"/><rect x="3" y="10" width="1" height="1"/><rect x="4" y="10" width="1" height="1"/><rect x="5" y="10" width="1" height="1"/><rect x="6" y="10" width="1" height="1"/><rect x="2" y="11" width="1" height="1"/><rect x="5" y="11" width="1" height="1"/><rect x="8" y="11" width="1" height="1"/><rect x="1" y="12" width="1" height="1"/><rect x="5" y="12" width="1" height="1"/><rect x="9" y="12" width="1" height="1"/></g></svg></div><span>16</span></div>
+            <div class="size-item"><div class="on-dark"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" ><g fill="currentColor"><rect x="13" y="2" width="1" height="1"/><rect x="14" y="2" width="1" height="1"/><rect x="12" y="3" width="1" height="1"/><rect x="9" y="4" width="1" height="1"/><rect x="10" y="4" width="1" height="1"/><rect x="11" y="4" width="1" height="1"/><rect x="8" y="5" width="1" height="1"/><rect x="9" y="5" width="1" height="1"/><rect x="10" y="5" width="1" height="1"/><rect x="11" y="5" width="1" height="1"/><rect x="12" y="5" width="1" height="1"/><rect x="7" y="6" width="1" height="1"/><rect x="8" y="6" width="1" height="1"/><rect x="9" y="6" width="1" height="1"/><rect x="10" y="6" width="1" height="1"/><rect x="2" y="7" width="1" height="1"/><rect x="3" y="7" width="1" height="1"/><rect x="4" y="7" width="1" height="1"/><rect x="5" y="7" width="1" height="1"/><rect x="6" y="7" width="1" height="1"/><rect x="8" y="7" width="1" height="1"/><rect x="9" y="7" width="1" height="1"/><rect x="1" y="8" width="1" height="1"/><rect x="2" y="8" width="1" height="1"/><rect x="3" y="8" width="1" height="1"/><rect x="4" y="8" width="1" height="1"/><rect x="5" y="8" width="1" height="1"/><rect x="6" y="8" width="1" height="1"/><rect x="7" y="8" width="1" height="1"/><rect x="1" y="9" width="1" height="1"/><rect x="2" y="9" width="1" height="1"/><rect x="3" y="9" width="1" height="1"/><rect x="4" y="9" width="1" height="1"/><rect x="5" y="9" width="1" height="1"/><rect x="6" y="9" width="1" height="1"/><rect x="7" y="9" width="1" height="1"/><rect x="2" y="10" width="1" height="1"/><rect x="3" y="10" width="1" height="1"/><rect x="4" y="10" width="1" height="1"/><rect x="5" y="10" width="1" height="1"/><rect x="6" y="10" width="1" height="1"/><rect x="2" y="11" width="1" height="1"/><rect x="5" y="11" width="1" height="1"/><rect x="8" y="11" width="1" height="1"/><rect x="1" y="12" width="1" height="1"/><rect x="5" y="12" width="1" height="1"/><rect x="9" y="12" width="1" height="1"/></g></svg></div><span>12</span></div>
+          </div>
+          <span class="hint">El primero es la píldora blanca de 46px que ya usa la barra.</span>
+        </div>
+        <div class="lockup">
+          <span class="lbl">Con el nombre</span>
+          <div class="lock-in"><svg viewBox="0 0 16 16" width="30" height="30" aria-hidden="true" ><g fill="currentColor"><rect x="13" y="2" width="1" height="1"/><rect x="14" y="2" width="1" height="1"/><rect x="12" y="3" width="1" height="1"/><rect x="9" y="4" width="1" height="1"/><rect x="10" y="4" width="1" height="1"/><rect x="11" y="4" width="1" height="1"/><rect x="8" y="5" width="1" height="1"/><rect x="9" y="5" width="1" height="1"/><rect x="10" y="5" width="1" height="1"/><rect x="11" y="5" width="1" height="1"/><rect x="12" y="5" width="1" height="1"/><rect x="7" y="6" width="1" height="1"/><rect x="8" y="6" width="1" height="1"/><rect x="9" y="6" width="1" height="1"/><rect x="10" y="6" width="1" height="1"/><rect x="2" y="7" width="1" height="1"/><rect x="3" y="7" width="1" height="1"/><rect x="4" y="7" width="1" height="1"/><rect x="5" y="7" width="1" height="1"/><rect x="6" y="7" width="1" height="1"/><rect x="8" y="7" width="1" height="1"/><rect x="9" y="7" width="1" height="1"/><rect x="1" y="8" width="1" height="1"/><rect x="2" y="8" width="1" height="1"/><rect x="3" y="8" width="1" height="1"/><rect x="4" y="8" width="1" height="1"/><rect x="5" y="8" width="1" height="1"/><rect x="6" y="8" width="1" height="1"/><rect x="7" y="8" width="1" height="1"/><rect x="1" y="9" width="1" height="1"/><rect x="2" y="9" width="1" height="1"/><rect x="3" y="9" width="1" height="1"/><rect x="4" y="9" width="1" height="1"/><rect x="5" y="9" width="1" height="1"/><rect x="6" y="9" width="1" height="1"/><rect x="7" y="9" width="1" height="1"/><rect x="2" y="10" width="1" height="1"/><rect x="3" y="10" width="1" height="1"/><rect x="4" y="10" width="1" height="1"/><rect x="5" y="10" width="1" height="1"/><rect x="6" y="10" width="1" height="1"/><rect x="2" y="11" width="1" height="1"/><rect x="5" y="11" width="1" height="1"/><rect x="8" y="11" width="1" height="1"/><rect x="1" y="12" width="1" height="1"/><rect x="5" y="12" width="1" height="1"/><rect x="9" y="12" width="1" height="1"/></g></svg><span class="wordmark">pa&#39;lante</span></div>
+        </div>
+      </div>
+
+      <div class="pros">
+        <div class="pro"><span class="lbl">A favor</span><p>Conserva lo que la hormiga ya significaba —carga mucho más de lo que pesa, trabaja en red, mueve cosas de un lado a otro— que resulta ser exactamente lo que hace el producto con los datos. No tiras a la basura el reconocimiento que ya construyeron.</p></div>
+        <div class="pro"><span class="lbl">En contra</span><p>A 16px una hormiga siempre va a ser lo más frágil de las cuatro: son muchas patas en muy pocos píxeles. Y sigue arrastrando una lectura de finanzas personales que quizá ya no quieras.</p></div>
+      </div>
+    </article>
+    <article class="card" id="prompt">
+      <div class="card-h">
+        <h2>El prompt</h2>
+        <p class="concepto">El signo mayor-que con el cursor. Dos lecturas en un solo glifo: <em>pa'lante</em> es avanzar, y <code>&gt;_</code> es la terminal.</p>
+      </div>
+
+      <div class="showcase">
+        <div class="stage stage-dark">
+          <div class="mark-lg"><svg viewBox="0 0 16 16" width="104" height="104" aria-hidden="true" ><g fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4.6 3.9 L9.7 8 L4.6 12.1"/></g><rect x="10.6" y="11" width="4.2" height="2.1" rx="1.05" fill="currentColor"/></svg></div>
+          <span class="stage-l">sobre negro</span>
+        </div>
+        <div class="stage stage-light">
+          <div class="mark-lg"><svg viewBox="0 0 16 16" width="104" height="104" aria-hidden="true" ><g fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4.6 3.9 L9.7 8 L4.6 12.1"/></g><rect x="10.6" y="11" width="4.2" height="2.1" rx="1.05" fill="currentColor"/></svg></div>
+          <span class="stage-l">sobre blanco</span>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="sizes">
+          <span class="lbl">Tamaños reales</span>
+          <div class="sizes-in">
+            <div class="pill"><svg viewBox="0 0 16 16" width="26" height="26" aria-hidden="true" ><g fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4.6 3.9 L9.7 8 L4.6 12.1"/></g><rect x="10.6" y="11" width="4.2" height="2.1" rx="1.05" fill="currentColor"/></svg></div>
+            <div class="size-item"><div class="on-dark"><svg viewBox="0 0 16 16" width="24" height="24" aria-hidden="true" ><g fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4.6 3.9 L9.7 8 L4.6 12.1"/></g><rect x="10.6" y="11" width="4.2" height="2.1" rx="1.05" fill="currentColor"/></svg></div><span>24</span></div>
+            <div class="size-item"><div class="on-dark"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" ><g fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4.6 3.9 L9.7 8 L4.6 12.1"/></g><rect x="10.6" y="11" width="4.2" height="2.1" rx="1.05" fill="currentColor"/></svg></div><span>16</span></div>
+            <div class="size-item"><div class="on-dark"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" ><g fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4.6 3.9 L9.7 8 L4.6 12.1"/></g><rect x="10.6" y="11" width="4.2" height="2.1" rx="1.05" fill="currentColor"/></svg></div><span>12</span></div>
+          </div>
+          <span class="hint">El primero es la píldora blanca de 46px que ya usa la barra.</span>
+        </div>
+        <div class="lockup">
+          <span class="lbl">Con el nombre</span>
+          <div class="lock-in"><svg viewBox="0 0 16 16" width="30" height="30" aria-hidden="true" ><g fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4.6 3.9 L9.7 8 L4.6 12.1"/></g><rect x="10.6" y="11" width="4.2" height="2.1" rx="1.05" fill="currentColor"/></svg><span class="wordmark">pa&#39;lante</span></div>
+        </div>
+      </div>
+
+      <div class="pros">
+        <div class="pro"><span class="lbl">A favor</span><p>Es el símbolo nativo de tu nuevo público. Un desarrollador lo reconoce antes de leer el nombre. Sobrevive intacto a 16px, en monocromo, en un favicon y en un README.</p></div>
+        <div class="pro"><span class="lbl">En contra</span><p>Es el más genérico de los cuatro: muchas herramientas de desarrollador usan el prompt. Ganas legibilidad inmediata, pierdes singularidad.</p></div>
+      </div>
+    </article>
+    <article class="card" id="convergencia">
+      <div class="card-h">
+        <h2>La convergencia</h2>
+        <p class="concepto">Tres fuentes dispersas que se unen en un solo canal. Es el mecanismo del producto dibujado: extraer, normalizar, distribuir.</p>
+      </div>
+
+      <div class="showcase">
+        <div class="stage stage-dark">
+          <div class="mark-lg"><svg viewBox="0 0 16 16" width="104" height="104" aria-hidden="true" ><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3.4 3.6 Q8.6 3.6 11 8"/><path d="M3.4 8 L11 8"/><path d="M3.4 12.4 Q8.6 12.4 11 8"/></g><g fill="currentColor"><circle cx="3" cy="3.6" r="1.5"/><circle cx="3" cy="8" r="1.5"/><circle cx="3" cy="12.4" r="1.5"/></g><path d="M11 8 L14.4 8" stroke="currentColor" stroke-width="2.7" stroke-linecap="round"/></svg></div>
+          <span class="stage-l">sobre negro</span>
+        </div>
+        <div class="stage stage-light">
+          <div class="mark-lg"><svg viewBox="0 0 16 16" width="104" height="104" aria-hidden="true" ><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3.4 3.6 Q8.6 3.6 11 8"/><path d="M3.4 8 L11 8"/><path d="M3.4 12.4 Q8.6 12.4 11 8"/></g><g fill="currentColor"><circle cx="3" cy="3.6" r="1.5"/><circle cx="3" cy="8" r="1.5"/><circle cx="3" cy="12.4" r="1.5"/></g><path d="M11 8 L14.4 8" stroke="currentColor" stroke-width="2.7" stroke-linecap="round"/></svg></div>
+          <span class="stage-l">sobre blanco</span>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="sizes">
+          <span class="lbl">Tamaños reales</span>
+          <div class="sizes-in">
+            <div class="pill"><svg viewBox="0 0 16 16" width="26" height="26" aria-hidden="true" ><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3.4 3.6 Q8.6 3.6 11 8"/><path d="M3.4 8 L11 8"/><path d="M3.4 12.4 Q8.6 12.4 11 8"/></g><g fill="currentColor"><circle cx="3" cy="3.6" r="1.5"/><circle cx="3" cy="8" r="1.5"/><circle cx="3" cy="12.4" r="1.5"/></g><path d="M11 8 L14.4 8" stroke="currentColor" stroke-width="2.7" stroke-linecap="round"/></svg></div>
+            <div class="size-item"><div class="on-dark"><svg viewBox="0 0 16 16" width="24" height="24" aria-hidden="true" ><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3.4 3.6 Q8.6 3.6 11 8"/><path d="M3.4 8 L11 8"/><path d="M3.4 12.4 Q8.6 12.4 11 8"/></g><g fill="currentColor"><circle cx="3" cy="3.6" r="1.5"/><circle cx="3" cy="8" r="1.5"/><circle cx="3" cy="12.4" r="1.5"/></g><path d="M11 8 L14.4 8" stroke="currentColor" stroke-width="2.7" stroke-linecap="round"/></svg></div><span>24</span></div>
+            <div class="size-item"><div class="on-dark"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" ><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3.4 3.6 Q8.6 3.6 11 8"/><path d="M3.4 8 L11 8"/><path d="M3.4 12.4 Q8.6 12.4 11 8"/></g><g fill="currentColor"><circle cx="3" cy="3.6" r="1.5"/><circle cx="3" cy="8" r="1.5"/><circle cx="3" cy="12.4" r="1.5"/></g><path d="M11 8 L14.4 8" stroke="currentColor" stroke-width="2.7" stroke-linecap="round"/></svg></div><span>16</span></div>
+            <div class="size-item"><div class="on-dark"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" ><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3.4 3.6 Q8.6 3.6 11 8"/><path d="M3.4 8 L11 8"/><path d="M3.4 12.4 Q8.6 12.4 11 8"/></g><g fill="currentColor"><circle cx="3" cy="3.6" r="1.5"/><circle cx="3" cy="8" r="1.5"/><circle cx="3" cy="12.4" r="1.5"/></g><path d="M11 8 L14.4 8" stroke="currentColor" stroke-width="2.7" stroke-linecap="round"/></svg></div><span>12</span></div>
+          </div>
+          <span class="hint">El primero es la píldora blanca de 46px que ya usa la barra.</span>
+        </div>
+        <div class="lockup">
+          <span class="lbl">Con el nombre</span>
+          <div class="lock-in"><svg viewBox="0 0 16 16" width="30" height="30" aria-hidden="true" ><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3.4 3.6 Q8.6 3.6 11 8"/><path d="M3.4 8 L11 8"/><path d="M3.4 12.4 Q8.6 12.4 11 8"/></g><g fill="currentColor"><circle cx="3" cy="3.6" r="1.5"/><circle cx="3" cy="8" r="1.5"/><circle cx="3" cy="12.4" r="1.5"/></g><path d="M11 8 L14.4 8" stroke="currentColor" stroke-width="2.7" stroke-linecap="round"/></svg><span class="wordmark">pa&#39;lante</span></div>
+        </div>
+      </div>
+
+      <div class="pros">
+        <div class="pro"><span class="lbl">A favor</span><p>Es el único que explica qué hace Pa'lante sin una palabra. Encaja con el discurso de la API y no depende de ninguna metáfora animal.</p></div>
+        <div class="pro"><span class="lbl">En contra</span><p>Necesita un momento de lectura, y a 16px los tres puntos se acercan peligrosamente entre sí. Es el que más cuidado necesita en tamaños chicos.</p></div>
+      </div>
+    </article>
+    <article class="card" id="segmentos">
+      <div class="card-h">
+        <h2>Tres segmentos <span class="badge">Recomendado</span></h2>
+        <p class="concepto">Tres galones que crecen hacia la derecha. Son los tres segmentos del cuerpo de una hormiga y, a la vez, avance y el <code>»</code> de una terminal.</p>
+      </div>
+
+      <div class="showcase">
+        <div class="stage stage-dark">
+          <div class="mark-lg"><svg viewBox="0 0 16 16" width="104" height="104" aria-hidden="true" ><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3.2 5.2 L6.1 8 L3.2 10.8" stroke-width="1.7"/><path d="M7.2 4.4 L10.9 8 L7.2 11.6" stroke-width="2"/><path d="M12 3.4 L14.4 8 L12 12.6" stroke-width="2.3" stroke-linejoin="miter"/></g></svg></div>
+          <span class="stage-l">sobre negro</span>
+        </div>
+        <div class="stage stage-light">
+          <div class="mark-lg"><svg viewBox="0 0 16 16" width="104" height="104" aria-hidden="true" ><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3.2 5.2 L6.1 8 L3.2 10.8" stroke-width="1.7"/><path d="M7.2 4.4 L10.9 8 L7.2 11.6" stroke-width="2"/><path d="M12 3.4 L14.4 8 L12 12.6" stroke-width="2.3" stroke-linejoin="miter"/></g></svg></div>
+          <span class="stage-l">sobre blanco</span>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="sizes">
+          <span class="lbl">Tamaños reales</span>
+          <div class="sizes-in">
+            <div class="pill"><svg viewBox="0 0 16 16" width="26" height="26" aria-hidden="true" ><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3.2 5.2 L6.1 8 L3.2 10.8" stroke-width="1.7"/><path d="M7.2 4.4 L10.9 8 L7.2 11.6" stroke-width="2"/><path d="M12 3.4 L14.4 8 L12 12.6" stroke-width="2.3" stroke-linejoin="miter"/></g></svg></div>
+            <div class="size-item"><div class="on-dark"><svg viewBox="0 0 16 16" width="24" height="24" aria-hidden="true" ><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3.2 5.2 L6.1 8 L3.2 10.8" stroke-width="1.7"/><path d="M7.2 4.4 L10.9 8 L7.2 11.6" stroke-width="2"/><path d="M12 3.4 L14.4 8 L12 12.6" stroke-width="2.3" stroke-linejoin="miter"/></g></svg></div><span>24</span></div>
+            <div class="size-item"><div class="on-dark"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" ><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3.2 5.2 L6.1 8 L3.2 10.8" stroke-width="1.7"/><path d="M7.2 4.4 L10.9 8 L7.2 11.6" stroke-width="2"/><path d="M12 3.4 L14.4 8 L12 12.6" stroke-width="2.3" stroke-linejoin="miter"/></g></svg></div><span>16</span></div>
+            <div class="size-item"><div class="on-dark"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" ><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3.2 5.2 L6.1 8 L3.2 10.8" stroke-width="1.7"/><path d="M7.2 4.4 L10.9 8 L7.2 11.6" stroke-width="2"/><path d="M12 3.4 L14.4 8 L12 12.6" stroke-width="2.3" stroke-linejoin="miter"/></g></svg></div><span>12</span></div>
+          </div>
+          <span class="hint">El primero es la píldora blanca de 46px que ya usa la barra.</span>
+        </div>
+        <div class="lockup">
+          <span class="lbl">Con el nombre</span>
+          <div class="lock-in"><svg viewBox="0 0 16 16" width="30" height="30" aria-hidden="true" ><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3.2 5.2 L6.1 8 L3.2 10.8" stroke-width="1.7"/><path d="M7.2 4.4 L10.9 8 L7.2 11.6" stroke-width="2"/><path d="M12 3.4 L14.4 8 L12 12.6" stroke-width="2.3" stroke-linejoin="miter"/></g></svg><span class="wordmark">pa&#39;lante</span></div>
+        </div>
+      </div>
+
+      <div class="pros">
+        <div class="pro"><span class="lbl">A favor</span><p>Guarda el ADN de la hormiga sin dibujar una hormiga. Es el más limpio a cualquier tamaño y el que mejor funciona como patrón repetible —bordes, cargadores, separadores.</p></div>
+        <div class="pro"><span class="lbl">En contra</span><p>La conexión con la hormiga solo existe si alguien la cuenta. Por sí solo se lee como 'avanzar', que no está mal, pero es menos específico.</p></div>
+      </div>
+    </article></main>
+
+  <footer>
+    <h3>Mi recomendación</h3>
+    <p>
+      <b>Tres segmentos.</b> Es el único que resuelve las dos cosas a la vez: no
+      mata la hormiga —guarda su estructura de tres partes— pero deja de dibujarla,
+      que era el problema real. Y a 12&nbsp;px sigue siendo el mismo símbolo.
+    </p>
+    <p>
+      Si lo que más te importa es que un desarrollador lo reconozca sin pensar,
+      <b>el prompt</b> es la apuesta segura. Si te importa más que el logo explique
+      el producto, <b>la convergencia</b>. Y si el equipo le tiene cariño a la
+      hormiga, la versión pixel es una salida honesta que no la traiciona.
+    </p>
+    <p>
+      Dime cuál y lo dejo montado: SVG en el repo, favicon, y reemplazo en la barra
+      del landing, el login y el asistente de voz.
+    </p>
+  </footer>
+</div>

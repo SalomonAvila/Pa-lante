@@ -1,7 +1,7 @@
-import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { VideoBackdrop } from "@/components/shared/VideoBackdrop";
+import { Logotipo } from "@/components/shared/Logotipo";
 import { LoginForm } from "@/components/auth/LoginForm";
 import styles from "@/components/auth/login.module.css";
 
@@ -17,13 +17,7 @@ export default function LoginPage() {
 
       <header className={styles.header}>
         <Link href="/" className={styles.logo} aria-label="Pa'lante, inicio">
-          <Image
-            src="/hormiga-cargando-moneda.png"
-            alt=""
-            width={52}
-            height={52}
-            priority
-          />
+          <Logotipo size={22} />
         </Link>
       </header>
 

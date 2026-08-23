@@ -78,12 +78,13 @@
   overflow: hidden;
   border-radius: 50%;
   background: #fff;
+  color: #000;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
   transition: transform 0.3s ease;
 }
 
 .logo:hover { transform: scale(1.04); }
-.logo img { width: 72%; height: 72%; object-fit: contain; }
+.logo svg { display: block; }
 
 .main {
   position: relative;
