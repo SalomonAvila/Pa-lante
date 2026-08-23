@@ -23,6 +23,8 @@ export function LoginForm() {
 
   const [estadoMagico, setEstadoMagico] = useState<EstadoMagico>({ tipo: "idle" });
   const [correoMagico, setCorreoMagico] = useState("");
+  const [entrandoConGoogle, setEntrandoConGoogle] = useState(false);
+  const [errorGoogle, setErrorGoogle] = useState<string | null>(null);
 
   const [correoPassword, setCorreoPassword] = useState("");
   const [password, setPassword] = useState("");
@@ -31,17 +33,31 @@ export function LoginForm() {
   const [estadoRecuperar, setEstadoRecuperar] = useState<EstadoRecuperar>("idle");
 
   async function entrarConGoogle() {
-    setEstadoMagico({ tipo: "enviando" });
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-        scopes: GMAIL_SCOPE,
-        queryParams: { access_type: "offline", prompt: "consent" },
-      },
-    });
-    if (error) {
-      setEstadoMagico({ tipo: "error", mensaje: error.message });
+    setErrorGoogle(null);
+    setEntrandoConGoogle(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          scopes: GMAIL_SCOPE,
+          queryParams: { access_type: "offline", prompt: "consent" },
+        },
+      });
+      // Si no hubo error, el navegador ya está navegando a Google — no hay
+      // nada más que hacer acá. Si sí hubo error, lo mostramos y liberamos
+      // el botón para que se pueda reintentar.
+      if (error) {
+        setErrorGoogle(error.message);
+        setEntrandoConGoogle(false);
+      }
+    } catch (excepcion) {
+      // Sin este catch, una excepción (red, config del proveedor, etc.) deja
+      // el botón deshabilitado para siempre sin ningún mensaje — "se queda
+      // pegado" sin explicación ni forma de reintentar.
+      console.error("Error iniciando sesión con Google:", excepcion);
+      setErrorGoogle("No pudimos abrir el inicio de sesión con Google. Intenta de nuevo.");
+      setEntrandoConGoogle(false);
     }
   }
 
@@ -91,11 +107,16 @@ export function LoginForm() {
       <Button
         type="button"
         onClick={entrarConGoogle}
-        disabled={cargandoMagico}
+        disabled={entrandoConGoogle}
         className="w-full disabled:opacity-60"
       >
-        Continuar con Google
+        {entrandoConGoogle ? "Abriendo Google…" : "Continuar con Google"}
       </Button>
+      {errorGoogle && (
+        <p className="body-md text-error" role="alert">
+          {errorGoogle}
+        </p>
+      )}
 
       <div className="flex items-center gap-3">
         <span className="h-px flex-1 bg-outline-variant" />
