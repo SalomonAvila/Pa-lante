@@ -117,11 +117,18 @@ export async function iniciarConexiones(
   return resultados;
 }
 
+/** Cuánto simulamos que tarda el usuario en resolver un paso que lo espera. */
+const MS_AUTO_RESOLUCION = 400;
+
 /**
  * Avanza una fila si le corresponde: los pasos automáticos avanzan cuando
- * transcurrió su duración; los pasos que esperan al usuario se quedan
- * quietos hasta que `resolverAccion` los resuelva. Sin cola de jobs en el
- * repo, el avance ocurre al leer — cada GET mueve lo que haya que mover.
+ * transcurrió su duración. Los pasos que esperan al usuario (registro,
+ * CAPTCHA, OTP, recuperación) también avanzan solos con valores de fixture
+ * — es una fuente simulada, no tiene sentido bloquear la demo esperando un
+ * formulario que no existe; `resolverAccion` sigue disponible para quien
+ * quiera resolverlos a mano antes de que le toque el turno automático. Sin
+ * cola de jobs en el repo, el avance ocurre al leer — cada GET mueve lo que
+ * haya que mover.
  */
 async function avanzarYPersistir(supabase: SupabaseClient, fila: FilaConexion): Promise<FilaConexion> {
   if (ESTADOS_TERMINALES.includes(fila.estado)) return fila;
@@ -131,10 +138,11 @@ async function avanzarYPersistir(supabase: SupabaseClient, fila: FilaConexion): 
 
   const guion = construirGuion(fuente);
   const pasoActualDef = guion[fila.paso_actual];
-  if (!pasoActualDef || pasoActualDef.kind === "espera_usuario") return fila;
+  if (!pasoActualDef) return fila;
 
+  const duracion = pasoActualDef.kind === "espera_usuario" ? MS_AUTO_RESOLUCION : pasoActualDef.duracionMs;
   const transcurrido = Date.now() - new Date(fila.actualizado_en).getTime();
-  if (transcurrido < pasoActualDef.duracionMs) return fila;
+  if (transcurrido < duracion) return fila;
 
   const siguienteIndice = fila.paso_actual + 1;
   const siguientePaso = guion[siguienteIndice];

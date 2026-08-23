@@ -189,7 +189,7 @@ function OnboardingInner({ problemaInicial }: { problemaInicial?: ProblemaSelecc
         if (!activo) return;
         setConexiones(data.conexiones);
         const hayActivas = data.conexiones.some((c) => !ESTADOS_TERMINALES_UI.includes(c.estado));
-        if (hayActivas) temporizador = setTimeout(consultar, 2500);
+        if (hayActivas) temporizador = setTimeout(consultar, 700);
       } catch {
         if (activo) setErrorConexiones("No pudimos consultar tus conexiones.");
       }

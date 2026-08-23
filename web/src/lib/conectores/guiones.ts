@@ -1,6 +1,6 @@
 import type { FinancialDataConnector, PasoGuion } from "./tipos";
 
-const MS = { corto: 900, medio: 1600, largo: 2400 };
+const MS = { corto: 350, medio: 600, largo: 900 };
 
 /**
  * Paso de OTP: si la fuente lo puede "detectar" solo en el correo autorizado
