@@ -10,7 +10,7 @@ export function clienteAnthropic(): Anthropic {
   return cliente;
 }
 
-export const MODELO = process.env.ANTHROPIC_MODEL || "claude-opus-5";
+export const MODELO = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6";
 
 /**
  * Forma común de lo que un experto le pide al modelo que juzgue. Los datos

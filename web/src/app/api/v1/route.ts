@@ -18,7 +18,7 @@ export function GET() {
     },
     scopes: SCOPES,
     recursos: [
-      { metodo: "GET", ruta: "/api/v1/perfil", scope: "perfil:leer" },
+      { metodo: "GET", ruta: "/api/v1/perfil", scope: "uno o más scopes perfil:*" },
       { metodo: "GET", ruta: "/api/v1/cobertura", scope: "cobertura:leer" },
       { metodo: "GET", ruta: "/api/v1/hallazgos", scope: "hallazgos:leer" },
       {
