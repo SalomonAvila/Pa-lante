@@ -3,6 +3,9 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { autenticar, type ContextoMcp } from "./lib/auth.js";
 import { registrarExplicarDiagnostico } from "./tools/explicar-diagnostico.js";
+import { registrarObtenerPerfil } from "./tools/obtener-perfil.js";
+import { registrarObtenerPerfilFinanciero } from "./tools/obtener-perfil-financiero.js";
+import { registrarObtenerPruebaCapacidadPago } from "./tools/obtener-prueba-capacidad-pago.js";
 import { registrarObtenerContextoFinanciero } from "./tools/obtener-contexto-financiero.js";
 import { registrarObtenerPerfilCredito } from "./tools/obtener-perfil-credito.js";
 import { registrarObtenerPerfilTributario } from "./tools/obtener-perfil-tributario.js";
@@ -37,6 +40,12 @@ function construirServidor(ctx: ContextoMcp): McpServer {
   );
 
   registrarExplicarDiagnostico(server, ctx);
+  // Crudo: lo que el usuario declaró o conectó, hallazgo por hallazgo.
+  registrarObtenerPerfil(server, ctx);
+  // Agregado: el contrato canónico con procedencia y confianza por cifra.
+  registrarObtenerPerfilFinanciero(server, ctx);
+  // Derivado: vista mínima para un tercero.
+  registrarObtenerPruebaCapacidadPago(server, ctx);
   registrarObtenerContextoFinanciero(server, ctx);
   registrarObtenerPerfilCredito(server, ctx);
   registrarObtenerPerfilTributario(server, ctx);

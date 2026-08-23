@@ -237,3 +237,49 @@ export type PruebaCapacidadPagoV1 = {
   fuentesIndependientes: number;
   estadoPreparacion: EstadoPreparacionPerfil;
 };
+
+/**
+ * Vista derivada de diagnóstico (router de reglas explícitas: deuda de alto
+ * costo / flujo negativo / gasto sin categorizar). No forma parte del núcleo
+ * canónico (PerfilFinancieroV1) — es una agregación más simple, calculada
+ * directo desde transacciones+deudas, que consume web/src/lib/diagnostico y
+ * web/src/lib/inteligencia. Mismo patrón que PruebaCapacidadPagoV1: un caso
+ * de uso nuevo agrega su propia vista, nunca toca el núcleo.
+ */
+export type EstadoFinanciero = {
+  periodo: { desde: string; hasta: string; meses: number };
+  ingresoMensual: number;
+  gastoMensual: number;
+  flujoNeto: number;
+  gastoPorCategoria: Record<string, number>;
+  gastoSinCategorizar: number;
+  deudas: Deuda[];
+  calidadDatos: {
+    transacciones: number;
+    sinCategorizar: number;
+    confianzaMedia: number;
+  };
+};
+
+export type ReglaEvaluada = {
+  id: string;
+  descripcion: string;
+  umbral: string;
+  valorObservado: string;
+  cumple: boolean;
+};
+
+export type Diagnostico = {
+  ruta: "salida-de-deudas" | "visibilidad" | "meta-de-ahorro";
+  razon: string;
+  reglas: ReglaEvaluada[];
+  advertencias: string[];
+};
+
+export type Plan = {
+  meta: string;
+  aporteMensual: number;
+  pasos: string[];
+  supuestos: string[];
+  fechaObjetivo: string;
+};
