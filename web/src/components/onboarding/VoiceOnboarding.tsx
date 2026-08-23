@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { ChangeEvent, FormEvent, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ConversationProvider, useConversation, useConversationClientTool } from "@elevenlabs/react";
 import { VideoBackdrop } from "@/components/shared/VideoBackdrop";
@@ -44,6 +44,26 @@ type ContactoBasico = {
 };
 
 const TIPOS_DOCUMENTO = ["CC", "CE", "TI", "PA", "NIT"] as const;
+
+type ArchivoAdjunto = { id: string; nombre: string };
+
+type HallazgoResumen = {
+  id: string;
+  tipo: string;
+  fuente: string;
+  procedencia: string;
+  periodo: string | null;
+  datos: Record<string, unknown>;
+};
+
+type DocumentoResumen = { id: string; nombre: string; estado: string; creadoEn: string };
+
+type ResumenFases = {
+  contacto: ContactoBasico | null;
+  hallazgosPorVoz: HallazgoResumen[];
+  documentos: DocumentoResumen[];
+  completitud: Completitud;
+};
 
 function OnboardingInner() {
   const router = useRouter();
@@ -128,6 +148,62 @@ function OnboardingInner() {
       setErrorContacto("No pudimos guardar tus datos. Intenta de nuevo.");
     } finally {
       setGuardandoContacto(false);
+    }
+  }
+
+  // Después de terminar la conversación: adjuntar archivos (sin analizarlos
+  // todavía) → revisar el resumen de las 3 fases → generar y guardar el
+  // perfil. null mientras se sigue hablando o en reposo.
+  const [pasoPostVoz, setPasoPostVoz] = useState<"archivos" | "resumen" | null>(null);
+  const [archivos, setArchivos] = useState<ArchivoAdjunto[]>([]);
+  const [subiendoArchivo, setSubiendoArchivo] = useState(false);
+  const [errorArchivo, setErrorArchivo] = useState<string | null>(null);
+  const [resumenFases, setResumenFases] = useState<ResumenFases | null>(null);
+  const [generandoPerfil, setGenerandoPerfil] = useState(false);
+  const [errorGenerar, setErrorGenerar] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (pasoPostVoz !== "resumen" || resumenFases) return;
+    fetch("/api/perfil/resumen-fases")
+      .then((res) => res.json())
+      .then(setResumenFases)
+      .catch(() => setErrorGenerar("No pudimos cargar tu resumen. Intenta de nuevo."));
+  }, [pasoPostVoz, resumenFases]);
+
+  async function subirArchivo(archivo: File) {
+    setSubiendoArchivo(true);
+    setErrorArchivo(null);
+    try {
+      const formData = new FormData();
+      formData.append("archivo", archivo);
+      const res = await fetch("/api/perfil/documentos/adjuntar", { method: "POST", body: formData });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setArchivos((prev) => [...prev, { id: data.id, nombre: data.nombre }]);
+    } catch {
+      setErrorArchivo(`No pudimos subir "${archivo.name}". Intenta de nuevo.`);
+    } finally {
+      setSubiendoArchivo(false);
+    }
+  }
+
+  function seleccionarArchivos(event: ChangeEvent<HTMLInputElement>) {
+    const seleccionados = event.target.files;
+    if (!seleccionados) return;
+    Array.from(seleccionados).forEach((archivo) => void subirArchivo(archivo));
+    event.target.value = "";
+  }
+
+  async function confirmarYGenerarPerfil() {
+    setGenerandoPerfil(true);
+    setErrorGenerar(null);
+    try {
+      const res = await fetch("/api/perfil/generar", { method: "POST" });
+      if (!res.ok) throw new Error();
+      router.push("/intake/progreso");
+    } catch {
+      setErrorGenerar("No pudimos generar tu perfil. Intenta de nuevo.");
+      setGenerandoPerfil(false);
     }
   }
 
@@ -220,12 +296,12 @@ function OnboardingInner() {
     setTexto("");
   }
 
-  // Apenas se da por completa la conversación, se pasa a la pantalla de
-  // progreso real de los expertos (/intake/progreso) — ya no se muestra un
-  // resumen estático acá.
+  // Apenas se da por completa la conversación: adjuntar archivos → revisar
+  // resumen → generar perfil (ver pasoPostVoz). Recién ahí se navega a
+  // /intake/progreso, dentro de confirmarYGenerarPerfil.
   async function terminarYVerPerfil() {
     await conversation.endSession();
-    router.push("/intake/progreso");
+    setPasoPostVoz("archivos");
   }
 
   const suficiente = (completitud?.porcentaje ?? 0) >= UMBRAL_COMPLETITUD;
@@ -367,6 +443,143 @@ function OnboardingInner() {
               </button>
             )}
           </form>
+        </div>
+      </div>
+    );
+  }
+
+  // --- Archivos: cualquier formato, solo se adjuntan — a propósito no se
+  // analizan todavía (eso pasa recién al generar el perfil, y ni siquiera
+  // ahí: hoy no hay extractor real, ver conversación sobre integraciones).
+  if (pasoPostVoz === "archivos") {
+    return (
+      <div className="relative flex min-h-screen flex-1 flex-col items-center justify-center gap-8 px-6 py-16 text-white">
+        <VideoBackdrop />
+        <BackHomeButton theme="dark" />
+        <AvatarUsuario theme="dark" flotante />
+
+        <div className="relative z-10 flex w-full max-w-sm flex-col items-center gap-6 rounded-3xl border border-white/15 bg-black/40 p-6 text-center backdrop-blur-xl">
+          <div>
+            <h1 className="headline-md">¿Algo más para respaldar tu perfil?</h1>
+            <p className="mt-2 body-md text-white/70">
+              Extractos, capturas, lo que tengas — cualquier formato. Los guardamos, no los analizamos todavía.
+            </p>
+          </div>
+
+          <label className="flex w-full cursor-pointer flex-col items-center gap-2 rounded-2xl border border-dashed border-white/30 px-4 py-8 text-sm text-white/70 transition-colors hover:border-white/60 hover:text-white">
+            {subiendoArchivo ? "Subiendo…" : "Toca para elegir archivos"}
+            <input type="file" multiple onChange={seleccionarArchivos} disabled={subiendoArchivo} className="hidden" />
+          </label>
+
+          {errorArchivo && (
+            <p className="body-md text-error" role="alert">
+              {errorArchivo}
+            </p>
+          )}
+
+          {archivos.length > 0 && (
+            <ul className="flex w-full flex-col gap-1 text-left">
+              {archivos.map((archivo) => (
+                <li key={archivo.id} className="truncate rounded-lg bg-white/10 px-3 py-1.5 text-sm">
+                  {archivo.nombre}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <Button type="button" onClick={() => setPasoPostVoz("resumen")} className="mt-2 w-full">
+            {archivos.length > 0 ? "Continuar" : "No tengo archivos — continuar"}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // --- Resumen general: qué se capturó en cada fase, antes de generar y
+  // guardar el perfil financiero completo.
+  if (pasoPostVoz === "resumen") {
+    return (
+      <div className="relative flex min-h-screen flex-1 flex-col items-center gap-8 px-6 py-16 text-white">
+        <VideoBackdrop />
+        <BackHomeButton theme="dark" />
+        <AvatarUsuario theme="dark" flotante />
+
+        <div className="relative z-10 flex w-full max-w-md flex-col items-center gap-6">
+          <div className="text-center">
+            <h1 className="headline-md">Revisa antes de generar tu perfil</h1>
+            <p className="mt-2 body-md text-white/70">Esto es lo que tenemos de las 3 fases.</p>
+          </div>
+
+          {!resumenFases ? (
+            <p className="body-md text-white/60">Cargando…</p>
+          ) : (
+            <div className="flex w-full flex-col gap-4">
+              <div className="rounded-2xl border border-white/15 bg-black/40 p-5 text-left backdrop-blur-md">
+                <p className="label-md text-white/40">Contacto</p>
+                {resumenFases.contacto ? (
+                  <>
+                    <p className="mt-1 body-md">
+                      {resumenFases.contacto.nombres} {resumenFases.contacto.apellidos}
+                    </p>
+                    <p className="text-sm text-white/60">{resumenFases.contacto.celular}</p>
+                  </>
+                ) : (
+                  <p className="mt-1 text-sm text-white/50">No hay datos de contacto.</p>
+                )}
+              </div>
+
+              <div className="rounded-2xl border border-white/15 bg-black/40 p-5 text-left backdrop-blur-md">
+                <p className="label-md text-white/40">
+                  Lo que contaste por voz ({resumenFases.completitud.porcentaje}% de tu perfil)
+                </p>
+                {resumenFases.hallazgosPorVoz.length > 0 ? (
+                  <ul className="mt-1 flex flex-col gap-1">
+                    {resumenFases.hallazgosPorVoz.map((h) => (
+                      <li key={h.id} className="text-sm text-white/70">
+                        <span className="capitalize">{h.tipo.replace(/_/g, " ")}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-1 text-sm text-white/50">Todavía no contaste nada por voz.</p>
+                )}
+              </div>
+
+              <div className="rounded-2xl border border-white/15 bg-black/40 p-5 text-left backdrop-blur-md">
+                <p className="label-md text-white/40">Archivos adjuntos</p>
+                {resumenFases.documentos.length > 0 ? (
+                  <ul className="mt-1 flex flex-col gap-1">
+                    {resumenFases.documentos.map((d) => (
+                      <li key={d.id} className="truncate text-sm text-white/70">
+                        {d.nombre}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-1 text-sm text-white/50">No adjuntaste archivos.</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {errorGenerar && (
+            <p className="body-md text-error" role="alert">
+              {errorGenerar}
+            </p>
+          )}
+
+          <div className="flex w-full flex-col gap-3">
+            <Button type="button" onClick={confirmarYGenerarPerfil} disabled={generandoPerfil || !resumenFases}>
+              {generandoPerfil ? "Generando…" : "Confirmar y generar mi perfil"}
+            </Button>
+            <button
+              type="button"
+              onClick={() => setPasoPostVoz("archivos")}
+              className="label-md text-white/50 underline"
+            >
+              Volver a archivos
+            </button>
+          </div>
         </div>
       </div>
     );
