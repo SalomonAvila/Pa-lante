@@ -1,114 +1,57 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { HallazgoFinanciero } from "@/types/finance";
+import type { ObjetivoAccesoFinanciero, PerfilFinancieroV1 } from "@/types/finance";
+import { obtenerPerfilFinanciero } from "./obtener-perfil";
 
 export type Completitud = {
   porcentaje: number;
   camposFaltantes: string[];
 };
 
-type DatosPerfil = {
-  tienePersona: boolean;
-  hallazgos: HallazgoFinanciero[];
-  tieneIngresoObservado: boolean;
-  tieneGastoObservado: boolean;
-  tieneDeudaObservada: boolean;
+type ContextoPerfilFinanciero = {
+  perfil: PerfilFinancieroV1;
+  objetivoAcceso: ObjetivoAccesoFinanciero | null;
 };
 
-type CampoEsperado = {
-  id: string;
-  etiqueta: string;
-  cubierto: (datos: DatosPerfil) => boolean;
-};
-
-/** Ruta que el objetivo declarado (hallazgo `tipo: "goal"`) apunta a seguir. */
-function rutaDeclarada(hallazgos: HallazgoFinanciero[]): "deudas" | "ahorro" | "visibilidad" | null {
-  const meta = hallazgos.find((h) => h.tipo === "goal");
-  const valor = meta?.datos.ruta;
-  if (valor === "deudas" || valor === "ahorro" || valor === "visibilidad") return valor;
-  return null;
-}
-
-const CAMPOS_BASE: CampoEsperado[] = [
-  {
-    id: "identidad",
-    etiqueta: "Datos básicos de identidad",
-    cubierto: (d) => d.tienePersona,
-  },
-  {
-    id: "objetivo",
-    etiqueta: "Objetivo financiero (qué quiere lograr)",
-    cubierto: (d) => d.hallazgos.some((h) => h.tipo === "goal"),
-  },
-  {
-    id: "ingreso",
-    etiqueta: "Ingreso mensual aproximado",
-    cubierto: (d) => d.tieneIngresoObservado || d.hallazgos.some((h) => h.tipo === "income"),
-  },
-];
-
-/** Campos extra según la ruta que ya se intuye por el objetivo declarado. */
-const CAMPOS_POR_RUTA: Record<"deudas" | "ahorro" | "visibilidad", CampoEsperado[]> = {
-  deudas: [
-    {
-      id: "deuda",
-      etiqueta: "Deudas actuales (saldo y, si se sabe, tasa o cuota)",
-      cubierto: (d) => d.tieneDeudaObservada || d.hallazgos.some((h) => h.tipo === "liability"),
-    },
-  ],
-  ahorro: [
-    {
-      id: "meta_ahorro",
-      etiqueta: "Monto y fecha objetivo de ahorro",
-      cubierto: (d) => {
-        const meta = d.hallazgos.find((h) => h.tipo === "goal");
-        return Boolean(meta?.datos.monto_objetivo && meta?.datos.fecha_objetivo);
-      },
-    },
-  ],
-  visibilidad: [
-    {
-      id: "gasto",
-      etiqueta: "Gasto mensual aproximado",
-      cubierto: (d) => d.tieneGastoObservado,
-    },
-  ],
+const ETIQUETA_DATO_FALTANTE: Record<string, string> = {
+  ingreso_declarado: "Cuánto ganas al mes (que tú lo confirmes)",
+  ingreso_observado: "Ingreso observado en tus movimientos (Gmail o un extracto)",
+  historia_ingresos_3_meses: "Al menos 3 meses de historial de ingresos",
+  obligaciones_confirmadas: "Tus deudas u obligaciones actuales",
+  patrimonio: "Tus activos (cuentas, propiedades, vehículos)",
 };
 
 /**
- * % de completitud del perfil, contando TODAS las fuentes por igual (voz,
- * Gmail, PDF, manual) — no solo lo que se dijo por conversación. Es lo que
- * usa el agente de voz para decidir qué preguntar y cuándo parar.
+ * % de completitud del perfil — es lo que usa el agente de voz para decidir
+ * qué preguntar y cuándo parar. Reusa el mismo cálculo canónico que arma
+ * PerfilFinancieroV1 (`obtenerPerfilFinanciero` → `calidadDatos`), en vez de
+ * mantener una segunda definición de "completo" que podría divergir de la
+ * que ya usa el resto del producto (panorama, MCP, prueba de capacidad de
+ * pago). Le suma dos señales que el perfil canónico no cubre porque no son
+ * parte del núcleo financiero: identidad básica y el objetivo de acceso
+ * declarado (sin objetivo no hay a quién comparar la capacidad de pago).
  */
-export async function calcularCompletitud(supabase: SupabaseClient, userId: string): Promise<Completitud> {
-  const [{ data: persona }, { data: hallazgosData }, { data: transacciones }, { data: deudas }] = await Promise.all([
+export async function calcularCompletitud(
+  supabase: SupabaseClient,
+  userId: string,
+  contextoYaCalculado?: ContextoPerfilFinanciero,
+): Promise<Completitud> {
+  const [{ data: persona }, { perfil, objetivoAcceso }] = await Promise.all([
     supabase.from("personas").select("user_id").eq("user_id", userId).maybeSingle(),
-    supabase
-      .from("hallazgos_financieros")
-      .select("id, tipo, fuente, procedencia, periodo, datos, confianza, creado_en")
-      .eq("user_id", userId),
-    supabase.from("transacciones").select("tipo").eq("user_id", userId).limit(1),
-    supabase.from("deudas").select("id").eq("user_id", userId).limit(1),
+    contextoYaCalculado ?? obtenerPerfilFinanciero(supabase, userId),
   ]);
 
-  const hallazgos = (hallazgosData ?? []) as unknown as HallazgoFinanciero[];
-  const filasTx = (transacciones ?? []) as { tipo: "ingreso" | "gasto" }[];
+  const camposFaltantes: string[] = [];
+  if (!persona) camposFaltantes.push("Datos básicos de identidad");
+  if (!objetivoAcceso) {
+    camposFaltantes.push("Tu objetivo (ej. el canon de arriendo que quieres demostrar que puedes pagar)");
+  }
+  for (const dato of perfil.calidadDatos.datosFaltantes) {
+    camposFaltantes.push(ETIQUETA_DATO_FALTANTE[dato] ?? dato);
+  }
 
-  const datos: DatosPerfil = {
-    tienePersona: Boolean(persona),
-    hallazgos,
-    tieneIngresoObservado: filasTx.some((f) => f.tipo === "ingreso"),
-    tieneGastoObservado: filasTx.some((f) => f.tipo === "gasto"),
-    tieneDeudaObservada: (deudas ?? []).length > 0,
-  };
+  const señalesTotales = 2 + 5; // identidad + objetivo, más las 5 del núcleo canónico
+  const señalesCubiertas = señalesTotales - camposFaltantes.length;
+  const porcentaje = Math.max(0, Math.round((señalesCubiertas / señalesTotales) * 100));
 
-  const ruta = rutaDeclarada(hallazgos);
-  const camposEsperados = ruta ? [...CAMPOS_BASE, ...CAMPOS_POR_RUTA[ruta]] : CAMPOS_BASE;
-
-  const faltantes = camposEsperados.filter((c) => !c.cubierto(datos));
-  const porcentaje = Math.round(((camposEsperados.length - faltantes.length) / camposEsperados.length) * 100);
-
-  return {
-    porcentaje,
-    camposFaltantes: faltantes.map((c) => c.etiqueta),
-  };
+  return { porcentaje, camposFaltantes };
 }

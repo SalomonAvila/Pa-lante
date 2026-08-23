@@ -43,13 +43,14 @@ export default async function PanoramaPage() {
   if (!user) return null;
 
   const supabase = await createClient();
-  const [contexto, panorama, conexiones, completitud] = await Promise.all([
-    obtenerPerfilFinanciero(supabase, user.id),
+  const contexto = await obtenerPerfilFinanciero(supabase, user.id);
+  const { perfil, objetivoAcceso } = contexto;
+  const [panorama, conexiones, completitud] = await Promise.all([
     obtenerPanorama(supabase, user.id),
     listarConexiones(supabase, user.id),
-    calcularCompletitud(supabase, user.id),
+    // Le pasamos el perfil ya calculado para no repetir las 4 consultas de obtenerPerfilFinanciero.
+    calcularCompletitud(supabase, user.id, contexto),
   ]);
-  const { perfil, objetivoAcceso } = contexto;
   const prueba = crearPruebaCapacidadPago(perfil, objetivoAcceso);
   const porcentajeVerificado = prueba.porcentajeIngresoVerificado ?? 0;
   const listo = prueba.estadoPreparacion === "listo_para_compartir";
