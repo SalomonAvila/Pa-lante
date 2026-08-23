@@ -26,15 +26,17 @@ bunx supabase db push
 
 ## Tablas
 
-| Tabla | Para qué |
-|---|---|
-| `transacciones` | Movimientos normalizados. `confianza` (0–1) y `hash_dedupe` los llena el parser |
-| `deudas` | Saldo y tasa. **No se derivan de transacciones**: el diagnóstico necesita tasa para decidir "deuda de alto costo" |
-| `planes` | Plan activo del usuario (uno por usuario) |
-| `mcp_tokens` | Tokens de acceso de agentes. Se guarda solo el sha256 |
-| `mcp_accesos` | Registro de qué agente leyó qué y cuándo. El usuario lo lee, no lo borra |
+Lista autoritativa: `migrations/*.sql` (cada tabla nace en la migración que la creó). Agrupadas por para qué sirven:
 
-Todas con RLS: `auth.uid() = user_id`.
+| Grupo | Tablas | Para qué |
+|---|---|---|
+| Núcleo financiero | `transacciones`, `deudas`, `hallazgos_financieros`, `planes` | `transacciones`/`deudas` son el diagnóstico por reglas original; `hallazgos_financieros` es el ledger genérico y trazable que alimenta `PerfilFinancieroV1` — nunca sobrescribe un dato contradictorio de otra fuente |
+| Identidad y consentimiento | `personas`, `empresas`, `documentos_identidad`, `consentimientos`, `contacto_basico` | `consentimientos` es append-only, un tipo por finalidad y por fuente — nunca un checkbox único |
+| Extracción | `conexiones_fuente`, `documentos_financieros`, `documentos_conocimiento`, `documentos_conocimiento_chunks` | Estado de cada fuente externa conectada, documentos subidos a mano, y el RAG de conocimiento curado (pgvector) |
+| Capa conversacional (demo) | `conversaciones`, `mensajes`, `perfil_conversacional`, `analisis`, `perfiles_financieros_generados` | `analisis` es la auditoría de cada consulta a un experto (quién preguntó, qué fuentes, qué confianza) |
+| Distribución MCP | `mcp_tokens`, `mcp_accesos` | Solo se guarda el sha256 del token; `mcp_accesos` es lo que el usuario lee para ver quién accedió a su contexto y revocarlo |
+
+Todas con RLS: `auth.uid() = user_id` (el servidor MCP filtra explícitamente por `user_id` en vez de depender de RLS, porque un agente llama sin sesión de navegador — ver `mcp/src/lib/auth.ts`).
 
 ## Probar el MCP sin base de datos
 
