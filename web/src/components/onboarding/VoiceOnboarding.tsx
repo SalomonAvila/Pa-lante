@@ -290,7 +290,7 @@ function OnboardingInner() {
         <BackHomeButton theme="dark" />
         <AvatarUsuario theme="dark" flotante />
 
-        <div className="relative z-10 flex w-full max-w-sm flex-col items-center gap-6 text-center">
+        <div className="relative z-10 flex w-full max-w-sm flex-col items-center gap-6 rounded-3xl border border-white/15 bg-black/40 p-6 text-center backdrop-blur-xl">
           <div>
             <h1 className="headline-md">{contacto ? "Editar tus datos" : "Antes de empezar"}</h1>
             <p className="mt-2 body-md text-white/70">
