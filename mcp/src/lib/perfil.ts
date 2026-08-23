@@ -1,6 +1,5 @@
-import { createClient } from "@supabase/supabase-js";
 import type { HallazgoFinanciero } from "@web/types/finance";
-import type { ContextoMcp } from "./auth.js";
+import { clienteServicio, type ContextoMcp } from "./auth.js";
 
 type FilaPersona = {
   nombres: string;
@@ -53,11 +52,8 @@ export async function obtenerPerfil(ctx: ContextoMcp): Promise<PerfilDeclarado> 
     };
   }
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } },
-  );
+  const supabase = clienteServicio();
+  if (!supabase) throw new Error("Supabase no está configurado en el servidor MCP.");
 
   const [{ data: persona }, { data: hallazgosData }] = await Promise.all([
     supabase
