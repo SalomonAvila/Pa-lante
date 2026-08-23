@@ -3,7 +3,7 @@
   "project-name": "Pa'lante",
 
   // Short one-line summary of your project (in Spanish).
-  "project-oneliner-spanish": "Pa'lante extrae y normaliza tu contexto financiero disperso (correos, PDFs, DIAN, DataCrédito) y lo distribuye, con tu permiso, a cualquier agente de IA por API o servidor MCP.",
+  "project-oneliner-spanish": "Pa'lante extrae y normaliza tu contexto financiero disperso (correos, PDFs, DIAN, DataCrédito) y lo distribuye a cualquier agente de IA por API o servidor MCP — con tu permiso, sección por sección, y revocable en un clic.",
 
   // Brief description of your project (in Spanish).
   "project-description-spanish": "El contexto financiero de una persona existe, pero está atrapado en correos bancarios, PDFs con clave y portales de entidades — ningún sistema puede leerlo, y menos actuarlo. Pa'lante lo extrae desde tantas fuentes como sea posible (Gmail, PDFs, DIAN, DataCrédito, y una decena más simuladas), lo normaliza a un modelo único, trazable y versionado, y lo distribuye por API REST y por un servidor MCP con token propio y bitácora de accesos, para que el usuario decida qué agente externo puede leer su perfil y pueda revocarlo. Encima de ese núcleo, una capa de expertos conversacional (voz, once especialistas) es la demostración de lo que un agente ya puede construir sobre esos datos — no es el producto, es la prueba de que el puente funciona.",
