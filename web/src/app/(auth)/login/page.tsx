@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
+import { VideoBackdrop } from "@/components/shared/VideoBackdrop";
 import { LoginForm } from "@/components/auth/LoginForm";
 import styles from "@/components/auth/login.module.css";
 
@@ -12,6 +13,8 @@ export const metadata: Metadata = {
 export default function LoginPage() {
   return (
     <div className={styles.page}>
+      <VideoBackdrop />
+
       <header className={styles.header}>
         <Link href="/" className={styles.logo} aria-label="Pa'lante, inicio">
           <Image
