@@ -57,6 +57,7 @@
   overflow: hidden;
   border-radius: 50%;
   background: #fff;
+  color: #000;
   box-shadow: var(--nav-shadow);
   transition: transform 0.3s ease;
 }
@@ -65,9 +66,10 @@
   transform: scale(1.04);
 }
 
-.logo img {
-  width: 72%;
-  height: 72%;
+.logo svg {
+  display: block;
+  width: auto;
+  height: auto;
   object-fit: contain;
 }
 
@@ -193,6 +195,7 @@
   place-items: center;
   border-radius: 50%;
   background: #fff;
+  color: #000;
   color: #111;
   font-size: calc(var(--trust-size) * 0.34);
 }

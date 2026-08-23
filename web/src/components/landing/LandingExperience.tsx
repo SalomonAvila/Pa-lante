@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { VideoBackdrop } from "@/components/shared/VideoBackdrop";
+import { Logotipo } from "@/components/shared/Logotipo";
 import styles from "./landing.module.css";
 
 const NAVEGACION = [
@@ -118,13 +118,7 @@ export function LandingExperience() {
 
       <header className={styles.header}>
         <Link href="/" className={styles.logo} aria-label="Pa'lante, inicio">
-          <Image
-            src="/hormiga-cargando-moneda.png"
-            alt=""
-            width={52}
-            height={52}
-            priority
-          />
+          <Logotipo size={22} />
         </Link>
 
         <nav className={styles.navPill} aria-label="Navegación principal">
@@ -139,7 +133,7 @@ export function LandingExperience() {
           ))}
         </nav>
 
-        <Link href="/intake" className={styles.entrarDesktop}>
+        <Link href="/login" className={styles.entrarDesktop}>
           Entrar
         </Link>
 
@@ -177,7 +171,7 @@ export function LandingExperience() {
             </Link>
           ))}
           <Link
-            href="/intake"
+            href="/login"
             className={styles.menuEntrar}
             style={conRetraso("0.25s")}
             onClick={() => setMenuAbierto(false)}
