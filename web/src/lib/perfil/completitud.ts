@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { ObjetivoAccesoFinanciero, PerfilFinancieroV1 } from "@/types/finance";
+import type { PerfilFinancieroV1 } from "@/types/finance";
 import { obtenerPerfilFinanciero } from "./obtener-perfil";
 
 export type Completitud = {
@@ -9,7 +9,6 @@ export type Completitud = {
 
 type ContextoPerfilFinanciero = {
   perfil: PerfilFinancieroV1;
-  objetivoAcceso: ObjetivoAccesoFinanciero | null;
 };
 
 const ETIQUETA_DATO_FALTANTE: Record<string, string> = {
@@ -27,29 +26,29 @@ const ETIQUETA_DATO_FALTANTE: Record<string, string> = {
  * mantener una segunda definición de "completo" que podría divergir de la
  * que ya usa el resto del producto (panorama, MCP, prueba de capacidad de
  * pago). Le suma dos señales que el perfil canónico no cubre porque no son
- * parte del núcleo financiero: identidad básica y el objetivo de acceso
- * declarado (sin objetivo no hay a quién comparar la capacidad de pago).
+ * parte del núcleo financiero: el contacto básico confirmado y el problema
+ * que la persona eligió trabajar en esta etapa del flujo.
  */
 export async function calcularCompletitud(
   supabase: SupabaseClient,
   userId: string,
   contextoYaCalculado?: ContextoPerfilFinanciero,
 ): Promise<Completitud> {
-  const [{ data: persona }, { perfil, objetivoAcceso }] = await Promise.all([
-    supabase.from("personas").select("user_id").eq("user_id", userId).maybeSingle(),
+  const [{ data: contacto }, { data: perfilConversacional }, { perfil }] = await Promise.all([
+    supabase.from("contacto_basico").select("user_id").eq("user_id", userId).maybeSingle(),
+    supabase.from("perfil_conversacional").select("preferencias").eq("user_id", userId).maybeSingle(),
     contextoYaCalculado ?? obtenerPerfilFinanciero(supabase, userId),
   ]);
 
   const camposFaltantes: string[] = [];
-  if (!persona) camposFaltantes.push("Datos básicos de identidad");
-  if (!objetivoAcceso) {
-    camposFaltantes.push("Tu objetivo (ej. el canon de arriendo que quieres demostrar que puedes pagar)");
-  }
+  if (!contacto) camposFaltantes.push("Datos básicos de contacto");
+  const preferencias = perfilConversacional?.preferencias as Record<string, unknown> | null;
+  if (!preferencias?.problema_activo) camposFaltantes.push("El problema financiero que quieres trabajar");
   for (const dato of perfil.calidadDatos.datosFaltantes) {
     camposFaltantes.push(ETIQUETA_DATO_FALTANTE[dato] ?? dato);
   }
 
-  const señalesTotales = 2 + 5; // identidad + objetivo, más las 5 del núcleo canónico
+  const señalesTotales = 2 + 5; // contacto + problema elegido, más las 5 del núcleo canónico
   const señalesCubiertas = señalesTotales - camposFaltantes.length;
   const porcentaje = Math.max(0, Math.round((señalesCubiertas / señalesTotales) * 100));
 

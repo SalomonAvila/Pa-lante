@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useCallback, useEffect, useState } from "react";
+import { ChangeEvent, FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ConversationProvider, useConversation, useConversationClientTool } from "@elevenlabs/react";
 import { VideoBackdrop } from "@/components/shared/VideoBackdrop";
@@ -9,6 +9,7 @@ import { AvatarUsuario } from "@/components/auth/AvatarUsuario";
 import { Button } from "@/components/ui/Button";
 import { ReactiveVoiceCircle } from "./ReactiveVoiceCircle";
 import type { Completitud } from "@/lib/perfil/completitud";
+import type { ProblemaSeleccionado } from "@/lib/problemas/catalogo";
 import type { TipoHallazgo } from "@/types/finance";
 
 const AGENT_ID = process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID;
@@ -65,7 +66,7 @@ type ResumenFases = {
   completitud: Completitud;
 };
 
-function OnboardingInner() {
+function OnboardingInner({ problemaInicial }: { problemaInicial?: ProblemaSeleccionado }) {
   const router = useRouter();
   const [texto, setTexto] = useState("");
   const [mostrarTexto, setMostrarTexto] = useState(false);
@@ -89,6 +90,8 @@ function OnboardingInner() {
   const [formCiudad, setFormCiudad] = useState("");
   const [guardandoContacto, setGuardandoContacto] = useState(false);
   const [errorContacto, setErrorContacto] = useState<string | null>(null);
+  const contextoPendiente = useRef<string | null>(null);
+  const contextoEnviado = useRef(false);
 
   useEffect(() => {
     fetch("/api/perfil/contacto")
@@ -96,13 +99,13 @@ function OnboardingInner() {
       .then((data: { contacto: ContactoBasico | null }) => {
         if (data.contacto) {
           setContacto(data.contacto);
-          setFaseContacto("revisar");
+          setFaseContacto(problemaInicial ? "listo" : "revisar");
         } else {
-          setFaseContacto("formulario");
+          setFaseContacto(problemaInicial ? "listo" : "formulario");
         }
       })
-      .catch(() => setFaseContacto("formulario"));
-  }, []);
+      .catch(() => setFaseContacto(problemaInicial ? "listo" : "formulario"));
+  }, [problemaInicial]);
 
   function abrirFormularioContacto() {
     setFormNombres(contacto?.nombres ?? "");
@@ -143,7 +146,7 @@ function OnboardingInner() {
       });
       if (!res.ok) throw new Error("No se pudo guardar");
       setContacto(nuevo);
-      setFaseContacto("listo");
+      router.push("/intake/problema");
     } catch {
       setErrorContacto("No pudimos guardar tus datos. Intenta de nuevo.");
     } finally {
@@ -219,14 +222,21 @@ function OnboardingInner() {
       datos: Record<string, unknown>;
       periodo?: string;
     };
-    await fetch("/api/perfil/conversacion", {
+    const respuesta = await fetch("/api/perfil/conversacion", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ tipo, datos, periodo }),
     });
+    if (!respuesta.ok) {
+      const detalle = await respuesta.json().catch(() => null);
+      return JSON.stringify({
+        ok: false,
+        error: detalle?.error ?? "No se pudo guardar el hallazgo financiero.",
+      });
+    }
     const nueva = await consultarCompletitud();
     setCompletitud(nueva);
-    return JSON.stringify(nueva);
+    return JSON.stringify({ ok: true, ...nueva });
   });
 
   // El agente lo llama después de guardar un dato, para decidir la siguiente
@@ -241,6 +251,37 @@ function OnboardingInner() {
   const conectado = conversation.status === "connected";
   const conectando = conversation.status === "connecting";
 
+  useEffect(() => {
+    if (!conectado || contextoEnviado.current || !contextoPendiente.current) return;
+    conversation.sendContextualUpdate(contextoPendiente.current);
+    contextoEnviado.current = true;
+  }, [conectado, conversation]);
+
+  const prepararContexto = useCallback(
+    (inicial: Completitud) => {
+      const nombre = contacto ? `${contacto.nombres} ${contacto.apellidos}`.trim() : "no disponible";
+      const ciudad = contacto?.ciudad?.trim() || "no disponible";
+      const problema = problemaInicial?.titulo ?? "no seleccionado";
+      const detalleProblema = problemaInicial?.descripcion ?? "sin descripción adicional";
+      const faltantes = inicial.camposFaltantes.join(", ") || "ninguno";
+
+      contextoPendiente.current = [
+        "Contexto confirmado para esta conversación:",
+        `- Nombre: ${nombre}.`,
+        `- Ciudad: ${ciudad}.`,
+        `- Problema u objetivo principal: ${problema}.`,
+        `- Alcance del problema: ${detalleProblema}`,
+        `- Completitud financiera al iniciar esta sesión: ${inicial.porcentaje}%.`,
+        `- Datos financieros pendientes: ${faltantes}.`,
+        "No vuelvas a pedir los datos básicos ni preguntes qué problema quiere resolver.",
+        "Haz una sola pregunta a la vez y prioriza información útil para avanzar sobre el problema seleccionado.",
+        "Cuando identifiques un dato financiero estructurado, guárdalo antes de continuar y consulta de nuevo la completitud.",
+      ].join("\n");
+      contextoEnviado.current = false;
+    },
+    [contacto, problemaInicial],
+  );
+
   const empezarConVoz = useCallback(async () => {
     if (!AGENT_ID) {
       setError("Falta configurar el agente de voz.");
@@ -251,7 +292,8 @@ function OnboardingInner() {
       await navigator.mediaDevices.getUserMedia({ audio: true });
       const inicial = await consultarCompletitud();
       setCompletitud(inicial);
-      await conversation.startSession({
+      prepararContexto(inicial);
+      conversation.startSession({
         agentId: AGENT_ID,
         overrides: { tts: { voiceId: vozId } },
         dynamicVariables: {
@@ -262,7 +304,7 @@ function OnboardingInner() {
     } catch {
       setError("No pudimos acceder al micrófono. Puedes escribir en su lugar.");
     }
-  }, [conversation, vozId]);
+  }, [conversation, prepararContexto, vozId]);
 
   const empezarConTexto = useCallback(async () => {
     if (!AGENT_ID) {
@@ -273,7 +315,8 @@ function OnboardingInner() {
     try {
       const inicial = await consultarCompletitud();
       setCompletitud(inicial);
-      await conversation.startSession({
+      prepararContexto(inicial);
+      conversation.startSession({
         agentId: AGENT_ID,
         connectionType: "websocket",
         overrides: { tts: { voiceId: vozId } },
@@ -286,7 +329,7 @@ function OnboardingInner() {
     } catch {
       setError("No pudimos iniciar la conversación. Intenta de nuevo.");
     }
-  }, [conversation, vozId]);
+  }, [conversation, prepararContexto, vozId]);
 
   function enviarTexto(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -347,7 +390,7 @@ function OnboardingInner() {
             <Button type="button" variant="secondary" onClick={abrirFormularioContacto} className="flex-1">
               Editar
             </Button>
-            <Button type="button" onClick={() => setFaseContacto("listo")} className="flex-1">
+            <Button type="button" onClick={() => router.push("/intake/problema")} className="flex-1">
               Continuar
             </Button>
           </div>
@@ -648,10 +691,10 @@ function OnboardingInner() {
         <ReactiveVoiceCircle conversation={conversation} theme="dark" />
 
         <div className="max-w-md text-center">
-          <h1 className="headline-md">Antes de todo, conozcámonos</h1>
+          <h1 className="headline-md">Conversemos sobre {problemaInicial?.titulo.toLocaleLowerCase()}</h1>
           <p className="mt-2 body-md text-white/70">
-            Con qué sueñas, qué meta financiera tienes en mente, cómo están tus finanzas hoy — en el orden que
-            quieras, por voz o por texto.
+            Ya tenemos tus datos básicos y tu objetivo. Ahora haremos preguntas concretas para entender tu
+            situación y construir el contexto que te ayudará a avanzar.
           </p>
         </div>
 
@@ -680,7 +723,7 @@ function OnboardingInner() {
 
         <div className="flex w-full max-w-xs flex-col gap-3 sm:flex-row">
           <Button type="button" onClick={empezarConVoz} disabled={conectando} className="flex-1">
-            🎤 Hablar
+            Hablar
           </Button>
           <Button type="button" variant="secondary" onClick={empezarConTexto} disabled={conectando} className="flex-1">
             Escribir
@@ -697,10 +740,10 @@ function OnboardingInner() {
   );
 }
 
-export function VoiceOnboarding() {
+export function VoiceOnboarding({ problemaInicial }: { problemaInicial?: ProblemaSeleccionado }) {
   return (
     <ConversationProvider>
-      <OnboardingInner />
+      <OnboardingInner problemaInicial={problemaInicial} />
     </ConversationProvider>
   );
 }
