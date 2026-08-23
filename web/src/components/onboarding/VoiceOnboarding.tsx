@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useState } from "react";
 import { ConversationProvider, useConversation, useConversationClientTool } from "@elevenlabs/react";
 import { VideoBackdrop } from "@/components/shared/VideoBackdrop";
+import { BackHomeButton } from "@/components/shared/BackHomeButton";
 import { ConectarGmailButton } from "@/components/auth/ConectarGmailButton";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -144,6 +145,7 @@ function OnboardingInner() {
     return (
       <div className="relative flex min-h-screen flex-1 flex-col items-center justify-center gap-8 px-6 py-16 text-white">
         <VideoBackdrop />
+        <BackHomeButton theme="dark" />
         <div className="relative z-10 flex w-full max-w-md flex-col items-center gap-6 text-center">
           <h1 className="headline-md">Tu perfil está listo</h1>
           {resumen.objetivoDescripcion && <p className="body-md text-white/70">{resumen.objetivoDescripcion}</p>}
@@ -198,6 +200,7 @@ function OnboardingInner() {
   if (conectado) {
     return (
       <div className="relative flex min-h-screen flex-1 flex-col items-center justify-center gap-10 bg-white px-6 py-16">
+        <BackHomeButton theme="light" />
         <ReactiveVoiceCircle conversation={conversation} theme="light" size="min(72vw, 62vh)" />
 
         <p className="text-sm font-medium text-black/50">
@@ -248,6 +251,7 @@ function OnboardingInner() {
   return (
     <div className="relative flex min-h-screen flex-1 flex-col items-center justify-center gap-8 px-6 py-16 text-white">
       <VideoBackdrop />
+      <BackHomeButton theme="dark" />
 
       <div className="relative z-10 flex flex-col items-center gap-8">
         <ReactiveVoiceCircle conversation={conversation} theme="dark" />
