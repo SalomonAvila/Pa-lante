@@ -1,12 +1,11 @@
 "use client";
 
 import { FormEvent, useCallback, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ConversationProvider, useConversation, useConversationClientTool } from "@elevenlabs/react";
 import { VideoBackdrop } from "@/components/shared/VideoBackdrop";
 import { BackHomeButton } from "@/components/shared/BackHomeButton";
-import { ConectarGmailButton } from "@/components/auth/ConectarGmailButton";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
 import { ReactiveVoiceCircle } from "./ReactiveVoiceCircle";
 import type { Completitud } from "@/lib/perfil/completitud";
 import type { TipoHallazgo } from "@/types/finance";
@@ -28,20 +27,6 @@ const VOCES = [
   { id: "zsjfif2v09thEBtkBYFe", nombre: "Yeiden", descripcion: "Latino, cálido" },
 ] as const;
 
-type Resumen = {
-  porcentajeIngresoVerificado: number | null;
-  ingresoMensualVerificado: number | null;
-  canonMensualObjetivo: number | null;
-  estadoPreparacion: "sin_datos" | "requiere_datos" | "listo_para_compartir";
-  objetivoDescripcion: string | null;
-};
-
-function formatoCOP(valor: number): string {
-  return new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(
-    valor,
-  );
-}
-
 async function consultarCompletitud(): Promise<Completitud> {
   const res = await fetch("/api/perfil/completitud");
   if (!res.ok) return { porcentaje: 0, camposFaltantes: [] };
@@ -49,11 +34,11 @@ async function consultarCompletitud(): Promise<Completitud> {
 }
 
 function OnboardingInner() {
+  const router = useRouter();
   const [texto, setTexto] = useState("");
   const [mostrarTexto, setMostrarTexto] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [completitud, setCompletitud] = useState<Completitud | null>(null);
-  const [resumen, setResumen] = useState<Resumen | null>(null);
   const [vozId, setVozId] = useState<string>(VOCES[0].id);
 
   const conversation = useConversation({
@@ -145,71 +130,15 @@ function OnboardingInner() {
     setTexto("");
   }
 
-  // /panorama ya no existe como página propia: el resumen se muestra en la
-  // misma pantalla en vez de navegar a otro lado.
+  // Apenas se da por completa la conversación, se pasa a la pantalla de
+  // progreso real de los expertos (/intake/progreso) — ya no se muestra un
+  // resumen estático acá.
   async function terminarYVerPerfil() {
     await conversation.endSession();
-    const res = await fetch("/api/perfil/resumen");
-    if (res.ok) setResumen(await res.json());
+    router.push("/intake/progreso");
   }
 
   const suficiente = (completitud?.porcentaje ?? 0) >= UMBRAL_COMPLETITUD;
-
-  // --- Resumen: mismo fondo de video que la landing, resultado + fuentes extra.
-  if (resumen) {
-    return (
-      <div className="relative flex min-h-screen flex-1 flex-col items-center justify-center gap-8 px-6 py-16 text-white">
-        <VideoBackdrop />
-        <BackHomeButton theme="dark" />
-        <div className="relative z-10 flex w-full max-w-md flex-col items-center gap-6 text-center">
-          <h1 className="headline-md">Tu perfil está listo</h1>
-          {resumen.objetivoDescripcion && <p className="body-md text-white/70">{resumen.objetivoDescripcion}</p>}
-
-          <div className="flex w-full flex-col gap-4 rounded-2xl border border-white/15 bg-black/40 p-6 backdrop-blur-md">
-            <div>
-              <span className="text-4xl font-semibold tabular-nums">
-                {resumen.porcentajeIngresoVerificado == null
-                  ? "—"
-                  : `${resumen.porcentajeIngresoVerificado.toLocaleString("es-CO", { maximumFractionDigits: 1 })}%`}
-              </span>
-              <p className="mt-1 text-sm text-white/70">de tu ingreso declarado respaldado por datos observados</p>
-            </div>
-            {resumen.ingresoMensualVerificado != null && (
-              <div>
-                <span className="text-xl font-semibold tabular-nums">{formatoCOP(resumen.ingresoMensualVerificado)}</span>
-                <p className="text-sm text-white/70">ingreso mensual verificado</p>
-              </div>
-            )}
-            {resumen.canonMensualObjetivo != null && (
-              <div>
-                <span className="text-xl font-semibold tabular-nums">{formatoCOP(resumen.canonMensualObjetivo)}</span>
-                <p className="text-sm text-white/70">canon mensual que quieres demostrar</p>
-              </div>
-            )}
-          </div>
-
-          <div className="flex w-full flex-col gap-3 sm:flex-row">
-            <Card elevated className="flex-1">
-              <h2 className="font-semibold text-on-surface">Gmail</h2>
-              <p className="mt-1 text-sm text-on-surface-variant">Súmalo cuando quieras para respaldar más.</p>
-              <ConectarGmailButton />
-            </Card>
-            <Card elevated className="flex-1">
-              <h2 className="font-semibold text-on-surface">PDF</h2>
-              <p className="mt-1 text-sm text-on-surface-variant">Sube tus extractos bancarios.</p>
-              <Button variant="secondary" className="mt-4 w-full">
-                Cargar PDF
-              </Button>
-            </Card>
-          </div>
-
-          <button type="button" onClick={() => setResumen(null)} className="label-md text-white/70 underline">
-            Volver a la conversación
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   // --- Grabando: pantalla blanca e inmersiva, el círculo domina, nada más.
   if (conectado) {

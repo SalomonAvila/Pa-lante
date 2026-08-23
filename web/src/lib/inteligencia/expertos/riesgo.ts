@@ -1,6 +1,6 @@
 import { obtenerPanorama } from "@/lib/perfil/normalizacion";
 import { UMBRALES } from "@/lib/diagnostico/reglas";
-import { calcularEstadoFinanciero, obtenerDeudas, obtenerHallazgos, obtenerTransacciones } from "../datos";
+import { calcularEstadoFinanciero, obtenerDeudas, obtenerHallazgos, obtenerIngresoDeclarado, obtenerTransacciones } from "../datos";
 import { interpretarComoExperto } from "../llm";
 import { citarFuente, techoConfianzaPorTiers } from "../trust/tiers";
 import type { ContextoInteligencia, ExpertDefinition, ExpertResult, FuenteCitada } from "../tipos";
@@ -15,12 +15,13 @@ const RESTRICCIONES = [
 ];
 
 async function ejecutar(ctx: ContextoInteligencia, pregunta: string): Promise<ExpertResult> {
-  const [transacciones, deudas, hallazgosCredito, hallazgosTax, panorama] = await Promise.all([
+  const [transacciones, deudas, hallazgosCredito, hallazgosTax, panorama, ingresoDeclarado] = await Promise.all([
     obtenerTransacciones(ctx),
     obtenerDeudas(ctx),
     obtenerHallazgos(ctx, { tipo: "credit_report" }),
     obtenerHallazgos(ctx, { tipo: "tax_profile" }),
     obtenerPanorama(ctx.supabase, ctx.userId),
+    obtenerIngresoDeclarado(ctx),
   ]);
 
   if (transacciones.length === 0 && deudas.length === 0 && hallazgosCredito.length === 0) {
@@ -36,15 +37,19 @@ async function ejecutar(ctx: ContextoInteligencia, pregunta: string): Promise<Ex
   }
 
   const estado = calcularEstadoFinanciero(transacciones, deudas);
+  const ingresoMensual = estado.ingresoMensual || ingresoDeclarado?.valor || 0;
   const cuotaDeudaCara = deudas
     .filter((d) => (d.tasaEA ?? 0) >= UMBRALES.tasaAltoCostoEA)
     .reduce((s, d) => s + (d.cuotaMensual ?? 0), 0);
-  const cargaDeudaCaraSobreIngreso = estado.ingresoMensual > 0 ? cuotaDeudaCara / estado.ingresoMensual : null;
+  const cargaDeudaCaraSobreIngreso = ingresoMensual > 0 ? cuotaDeudaCara / ingresoMensual : null;
 
   const fuentes: FuenteCitada[] = [
     ...(deudas.length > 0 ? [citarFuente({ fuente: "manual", procedencia: "declarado" as const })] : []),
     ...hallazgosCredito.map((h) => citarFuente({ fuente: h.fuente, procedencia: h.procedencia, hallazgoId: h.id, periodo: h.periodo })),
     ...hallazgosTax.map((h) => citarFuente({ fuente: h.fuente, procedencia: h.procedencia, hallazgoId: h.id, periodo: h.periodo })),
+    ...(estado.ingresoMensual === 0 && ingresoDeclarado
+      ? [citarFuente({ fuente: ingresoDeclarado.hallazgo.fuente, procedencia: ingresoDeclarado.hallazgo.procedencia, hallazgoId: ingresoDeclarado.hallazgo.id, periodo: ingresoDeclarado.hallazgo.periodo })]
+      : []),
     citarFuente({ fuente: "nivel_endeudamiento_calculado", procedencia: "estimado" }),
   ];
 

@@ -214,6 +214,34 @@ export function calcularEstadoFinanciero(transacciones: Transaccion[], deudas: D
   };
 }
 
+/**
+ * Último ingreso mensual que el usuario declaró (ej. por voz, hallazgo
+ * tipo "income"), si lo hay. Los expertos que dependen de un ingreso para
+ * calcular una relación (carga de deuda/ingreso, cuota/ingreso) lo usan
+ * como respaldo cuando calcularEstadoFinanciero da 0 por falta de
+ * transacciones — sin esto, un usuario que solo habló por voz (sin Gmail
+ * ni PDF) no tenía ingreso con el que calcular nada, aunque sí lo dijo.
+ */
+export async function obtenerIngresoDeclarado(
+  ctx: ContextoInteligencia,
+): Promise<{ valor: number; hallazgo: HallazgoFinanciero } | null> {
+  const hallazgos = await obtenerHallazgos(ctx, { tipo: "income" });
+  const candidato = hallazgos.find((h) => h.procedencia === "declarado" || h.procedencia === "confirmado");
+  if (!candidato) return null;
+
+  const datos = candidato.datos;
+  const valor =
+    typeof datos.valor_anual === "number"
+      ? datos.valor_anual / 12
+      : typeof datos.valor_mensual === "number"
+        ? datos.valor_mensual
+        : typeof datos.valor === "number"
+          ? datos.valor
+          : 0;
+
+  return valor > 0 ? { valor, hallazgo: candidato } : null;
+}
+
 /** Flujo neto mensual, mes calendario a mes calendario (para tendencia/proyección). */
 export function flujoNetoPorMes(transacciones: Transaccion[]): { mes: string; flujoNeto: number }[] {
   const porMes = new Map<string, number>();

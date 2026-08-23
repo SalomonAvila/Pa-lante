@@ -1,5 +1,5 @@
 import { UMBRALES, formatearCOP } from "@/lib/diagnostico/reglas";
-import { calcularEstadoFinanciero, obtenerDeudas, obtenerHallazgos, obtenerTransacciones } from "../datos";
+import { calcularEstadoFinanciero, obtenerDeudas, obtenerHallazgos, obtenerIngresoDeclarado, obtenerTransacciones } from "../datos";
 import { interpretarComoExperto } from "../llm";
 import { citarFuente, techoConfianzaPorTiers } from "../trust/tiers";
 import type { ContextoInteligencia, ExpertDefinition, ExpertResult } from "../tipos";
@@ -14,10 +14,11 @@ const RESTRICCIONES = [
 ];
 
 async function ejecutar(ctx: ContextoInteligencia, pregunta: string): Promise<ExpertResult> {
-  const [transacciones, deudas, hallazgosDeuda] = await Promise.all([
+  const [transacciones, deudas, hallazgosDeuda, ingresoDeclarado] = await Promise.all([
     obtenerTransacciones(ctx),
     obtenerDeudas(ctx),
     obtenerHallazgos(ctx, { tipo: "liability" }),
+    obtenerIngresoDeclarado(ctx),
   ]);
 
   if (deudas.length === 0 && hallazgosDeuda.length === 0) {
@@ -33,13 +34,19 @@ async function ejecutar(ctx: ContextoInteligencia, pregunta: string): Promise<Ex
   }
 
   const estado = calcularEstadoFinanciero(transacciones, deudas);
+  // Sin transacciones (ej. usuario que solo habló por voz), estado.ingresoMensual
+  // da 0 aunque sí haya un ingreso declarado — se usa como respaldo.
+  const ingresoMensual = estado.ingresoMensual || ingresoDeclarado?.valor || 0;
   const deudaCara = deudas.filter((d) => (d.tasaEA ?? 0) >= UMBRALES.tasaAltoCostoEA);
   const cuotaDeudaCara = deudaCara.reduce((s, d) => s + (d.cuotaMensual ?? 0), 0);
-  const cargaSobreIngreso = estado.ingresoMensual > 0 ? cuotaDeudaCara / estado.ingresoMensual : null;
+  const cargaSobreIngreso = ingresoMensual > 0 ? cuotaDeudaCara / ingresoMensual : null;
 
   const fuentes = [
     ...(deudas.length > 0 ? [citarFuente({ fuente: "manual", procedencia: "declarado" as const })] : []),
     ...hallazgosDeuda.map((h) => citarFuente({ fuente: h.fuente, procedencia: h.procedencia, hallazgoId: h.id, periodo: h.periodo })),
+    ...(estado.ingresoMensual === 0 && ingresoDeclarado
+      ? [citarFuente({ fuente: ingresoDeclarado.hallazgo.fuente, procedencia: ingresoDeclarado.hallazgo.procedencia, hallazgoId: ingresoDeclarado.hallazgo.id, periodo: ingresoDeclarado.hallazgo.periodo })]
+      : []),
   ];
 
   const salida = await interpretarComoExperto({
@@ -57,7 +64,7 @@ async function ejecutar(ctx: ContextoInteligencia, pregunta: string): Promise<Ex
         esAltoCosto: (d.tasaEA ?? 0) >= UMBRALES.tasaAltoCostoEA,
       })),
       hallazgosDeExternas: hallazgosDeuda.map((h) => h.datos),
-      ingresoMensualPromedio: estado.ingresoMensual || null,
+      ingresoMensualPromedio: ingresoMensual || null,
       cargaDeDeudaCaraSobreIngreso: cargaSobreIngreso,
       umbralAltoCostoEA: UMBRALES.tasaAltoCostoEA,
       umbralCargaSobreIngreso: UMBRALES.cargaDeudaSobreIngreso,

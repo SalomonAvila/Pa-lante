@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { calcularAmortizacion, simularAbonoExtraordinario } from "../hipotecas/amortizacion";
 import { CATALOGO_OFERTAS_HIPOTECARIAS } from "../hipotecas/catalogo-ofertas";
-import { calcularEstadoFinanciero, obtenerDeudas, obtenerTransacciones } from "../datos";
+import { calcularEstadoFinanciero, obtenerDeudas, obtenerIngresoDeclarado, obtenerTransacciones } from "../datos";
 import { extraerParametros, interpretarComoExperto } from "../llm";
 import { citarFuente, techoConfianzaPorTiers } from "../trust/tiers";
 import type { ContextoInteligencia, ExpertDefinition, ExpertResult, FuenteCitada } from "../tipos";
@@ -58,9 +58,13 @@ async function ejecutar(ctx: ContextoInteligencia, pregunta: string): Promise<Ex
     };
   }
 
-  const [transacciones, deudas] = await Promise.all([obtenerTransacciones(ctx), obtenerDeudas(ctx)]);
+  const [transacciones, deudas, ingresoDeclarado] = await Promise.all([
+    obtenerTransacciones(ctx),
+    obtenerDeudas(ctx),
+    obtenerIngresoDeclarado(ctx),
+  ]);
   const estado = calcularEstadoFinanciero(transacciones, deudas);
-  const ingresoMensual = estado.ingresoMensual || null;
+  const ingresoMensual = estado.ingresoMensual || ingresoDeclarado?.valor || null;
 
   const escenariosPorBanco = CATALOGO_OFERTAS_HIPOTECARIAS.map((oferta) => {
     const resultado = calcularAmortizacion({
@@ -106,6 +110,9 @@ async function ejecutar(ctx: ContextoInteligencia, pregunta: string): Promise<Ex
     citarFuente({ fuente: "catalogo_referencia_hipotecario", procedencia: "estimado" }),
     ...(deudas.length > 0 || transacciones.length > 0
       ? [citarFuente({ fuente: "transacciones_y_deudas_usuario", procedencia: "observado" })]
+      : []),
+    ...(estado.ingresoMensual === 0 && ingresoDeclarado
+      ? [citarFuente({ fuente: ingresoDeclarado.hallazgo.fuente, procedencia: ingresoDeclarado.hallazgo.procedencia, hallazgoId: ingresoDeclarado.hallazgo.id, periodo: ingresoDeclarado.hallazgo.periodo })]
       : []),
   ];
 
