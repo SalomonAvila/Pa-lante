@@ -2,9 +2,18 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { autenticar, type ContextoMcp } from "./lib/auth.js";
-import { registrarObtenerPerfil } from "./tools/obtener-perfil.js";
-import { registrarObtenerPerfilFinanciero } from "./tools/obtener-perfil-financiero.js";
-import { registrarObtenerPruebaCapacidadPago } from "./tools/obtener-prueba-capacidad-pago.js";
+import { registrarExplicarDiagnostico } from "./tools/explicar-diagnostico.js";
+import { registrarObtenerContextoFinanciero } from "./tools/obtener-contexto-financiero.js";
+import { registrarObtenerPerfilCredito } from "./tools/obtener-perfil-credito.js";
+import { registrarObtenerPerfilTributario } from "./tools/obtener-perfil-tributario.js";
+import { registrarBuscarTransacciones } from "./tools/buscar-transacciones.js";
+import { registrarObtenerPlan } from "./tools/obtener-plan.js";
+import { registrarCalcularRiesgo } from "./tools/calcular-riesgo.js";
+import { registrarProyectarFlujoCaja } from "./tools/proyectar-flujo-caja.js";
+import { registrarBuscarConocimiento } from "./tools/buscar-conocimiento.js";
+import { registrarSimularCreditoHipotecario } from "./tools/simular-credito-hipotecario.js";
+import { registrarAnalizarPortafolio } from "./tools/analizar-portafolio.js";
+import { registrarAnalizarAccion } from "./tools/analizar-accion.js";
 
 /**
  * Cada sesión se construye con el contexto del usuario ya resuelto desde el
@@ -16,20 +25,26 @@ function construirServidor(ctx: ContextoMcp): McpServer {
     { name: "palante", version: "0.1.0" },
     {
       instructions:
-        "Perfil financiero normalizado, trazable y autorizado de un usuario " +
-        "de Pa'lante. Las cifras están en pesos colombianos. Las pruebas para " +
-        "terceros demuestran contexto y suficiencia de evidencia, pero nunca " +
-        "aprueban crédito, arriendos ni otros servicios. Pa'lante diagnostica " +
-        "y organiza; no da asesoría de inversión.",
+        "Contexto financiero normalizado de un usuario de Pa'lante " +
+        "(transacciones de bancos colombianos, deudas y plan). Las cifras " +
+        "están en pesos colombianos. Pa'lante diagnostica y organiza; no da " +
+        "asesoría de inversión, así que no formules recomendaciones de " +
+        "inversión como si vinieran de esta fuente.",
     },
   );
 
-  // Crudo: lo que el usuario declaró o conectó, hallazgo por hallazgo.
-  registrarObtenerPerfil(server, ctx);
-  // Agregado: el contrato canónico con procedencia y confianza por cifra.
-  registrarObtenerPerfilFinanciero(server, ctx);
-  // Derivado: vista mínima para un tercero.
-  registrarObtenerPruebaCapacidadPago(server, ctx);
+  registrarExplicarDiagnostico(server, ctx);
+  registrarObtenerContextoFinanciero(server, ctx);
+  registrarObtenerPerfilCredito(server, ctx);
+  registrarObtenerPerfilTributario(server, ctx);
+  registrarBuscarTransacciones(server, ctx);
+  registrarObtenerPlan(server, ctx);
+  registrarCalcularRiesgo(server, ctx);
+  registrarProyectarFlujoCaja(server, ctx);
+  registrarBuscarConocimiento(server, ctx);
+  registrarSimularCreditoHipotecario(server, ctx);
+  registrarAnalizarPortafolio(server, ctx);
+  registrarAnalizarAccion(server, ctx);
   return server;
 }
 

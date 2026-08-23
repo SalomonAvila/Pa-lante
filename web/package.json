@@ -6,20 +6,24 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "bun test",
+    "rag:ingest": "bun run scripts/ingest-conocimiento.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.120.0",
     "@elevenlabs/react": "^1.13.0",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.112.3",
     "googleapis": "^176.0.0",
     "next": "16.3.2",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "zod": "4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/bun": "^1.4.0",
+    "@types/bun": "^1.2.19",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
