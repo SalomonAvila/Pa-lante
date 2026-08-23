@@ -126,6 +126,32 @@
 .actionList li > span { color: #a3a097; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; }
 
 .tablePanel { width: 100%; }
+.sessionLayout { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(330px, .75fr); gap: 16px; align-items: start; }
+.selectedRow { background: #fff8e9; box-shadow: inset 3px 0 var(--accent); }
+.sessionDetail { position: sticky; top: 82px; overflow: hidden; max-height: calc(100vh - 104px); overflow-y: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); }
+.detailHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; border-bottom: 1px solid var(--line); padding: 20px; }
+.detailHeader > div > span, .detailSection > span { color: #9b6b24; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 8px; letter-spacing: .11em; }
+.detailHeader h3 { margin-top: 8px; font-family: var(--font-heading); font-size: 20px; line-height: 1.15; }
+.detailHeader p { margin-top: 6px; color: var(--muted); font-size: 9px; }
+.detailQuality { display: grid; grid-template-columns: auto 1fr; align-items: baseline; gap: 9px; padding: 18px 20px 0; }
+.detailQuality strong { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 25px; font-weight: 500; }
+.detailQuality span { color: var(--muted); font-size: 9px; }
+.detailQuality i { grid-column: 1 / -1; height: 3px; overflow: hidden; background: #e3e0d9; }
+.detailQuality b { display: block; height: 100%; background: var(--accent); }
+.detailSummary { padding: 18px 20px; color: #5f5d57; font-size: 11px; line-height: 1.65; }
+.detailMetrics { display: grid; grid-template-columns: repeat(2, 1fr); border-block: 1px solid var(--line); }
+.detailMetrics div { padding: 14px 20px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.detailMetrics div:nth-child(2n) { border-right: 0; }
+.detailMetrics div:nth-last-child(-n+2) { border-bottom: 0; }
+.detailMetrics dt { color: var(--muted); font-size: 8px; }
+.detailMetrics dd { margin-top: 6px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
+.detailSection { padding: 18px 20px; border-bottom: 1px solid var(--line); }
+.detailSection:last-child { border: 0; }
+.detailSection article { padding-top: 13px; }
+.detailSection article strong { font-size: 10px; }
+.detailSection article p { margin-top: 4px; color: var(--muted); font-size: 9px; line-height: 1.55; }
+.legacyNotice { padding: 18px 20px; color: var(--muted); font-size: 10px; }
+.legacyJson { overflow: auto; max-height: 540px; margin: 0 20px 20px; border-radius: 7px; background: #17181b; padding: 16px; color: #c7d8cd; font-size: 8px; line-height: 1.6; }
 .tableToolbar { display: flex; min-height: 68px; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); padding: 0 20px; }
 .tableToolbar strong { display: block; font-size: 12px; }
 .tableToolbar span { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; }
@@ -152,6 +178,18 @@
 .inlineEmpty a { display: inline-block; margin-top: 10px; color: #85601f; font-size: 11px; font-weight: 650; }
 
 .devIntro { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 16px; border: 1px solid #2c2d31; border-radius: 10px; background: #17181b; padding: 22px; color: #fff; }
+.platformGrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 16px; }
+.platformCard { display: grid; grid-template-columns: 42px 1fr; gap: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); padding: 20px; }
+.platformLogo { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 10px; background: #d97757; color: #fff; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; font-weight: 700; }
+.chatgptLogo { background: #20211f; font-size: 20px; }
+.platformCard > div:nth-child(2) > span { color: #929089; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 8px; letter-spacing: .09em; }
+.platformCard h3 { margin-top: 5px; font-size: 14px; }
+.platformCard p { margin-top: 7px; color: var(--muted); font-size: 10px; line-height: 1.55; }
+.platformActions { grid-column: 2; display: flex; align-items: center; gap: 8px; margin-top: 3px; }
+.platformActions button, .platformActions a { display: inline-flex; min-height: 31px; align-items: center; border-radius: 6px; padding: 0 11px; font-size: 9px; font-weight: 650; }
+.platformActions button { background: #191a1d; color: #fff; }
+.platformActions a { border: 1px solid var(--line); color: #595752; }
+.betaBadge { border-radius: 999px; background: #fff2d9; padding: 5px 8px; color: #98651b; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 8px; }
 .devIntro > div { display: flex; min-width: 0; align-items: center; gap: 16px; }
 .codePrompt { display: grid; width: 36px; height: 36px; flex: 0 0 auto; place-items: center; border: 1px solid #35363b; border-radius: 8px; color: var(--accent); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 .devIntro p { color: #b0b1b4; font-size: 11px; }
@@ -208,7 +246,8 @@
   .navigation button { width: auto; grid-template-columns: 17px auto; padding: 9px 10px; }
   .navigation button span { font-size: 11px; }
   .workspaceMain { width: 100%; margin: 0; }
-  .profileHero, .developerGrid { grid-template-columns: 1fr; }
+  .profileHero, .developerGrid, .sessionLayout { grid-template-columns: 1fr; }
+  .sessionDetail { position: static; max-height: none; }
   .qualityPanel { border-top: 1px solid #303136; border-left: 0; }
   .profileGrid { grid-template-columns: 1fr; }
   .metrics { grid-template-columns: repeat(2, 1fr); }
@@ -237,6 +276,7 @@
   .storageSummary div:nth-child(2) { border-right: 0; }
   .storageSummary div:nth-child(-n+2) { border-bottom: 1px solid #303136; }
   .devIntro { align-items: flex-start; flex-direction: column; }
+  .platformGrid { grid-template-columns: 1fr; }
   .scopeList label { grid-template-columns: 18px 1fr; }
   .scopeList label code { display: none; }
   .scopeFooter, .tokenReveal { align-items: flex-start; flex-direction: column; }

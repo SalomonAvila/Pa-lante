@@ -30,7 +30,7 @@ type Perfil = {
 };
 type DatosPortal = {
   perfil: null | { datos: Perfil };
-  sesionesPerfil: { id: string; version: string; generadoEn: string }[];
+  sesionesPerfil: { id: string; version: string; generadoEn: string; perfil: Perfil | Record<string, unknown> }[];
   documentos: { id: string; nombre: string; tipo: string; estado: string; creadoEn: string }[];
   conversaciones: { id: string; titulo: string | null; canal: string; actualizadoEn: string }[];
 };
@@ -94,13 +94,15 @@ export default function PortalPage() {
         const [portal, accesos] = await Promise.all([portalRes.json(), accesoRes.json()]);
         if (!portalRes.ok) throw new Error(portal.error);
         if (!accesoRes.ok) throw new Error(accesos.error);
+        const solicitada = new URLSearchParams(window.location.search).get("section");
+        if (solicitada === "integraciones" || solicitada === "sesiones" || solicitada === "archivos") setSeccion(solicitada);
         setDatos(portal);
         setDatosAcceso(accesos);
       })
       .catch((e) => setError(e instanceof Error ? e.message : "No pudimos cargar tu portal."));
   }, []);
 
-  async function crearAcceso() {
+  async function crearAcceso(nombre?: string) {
     setCreando(true);
     setToken(null);
     setError(null);
@@ -108,7 +110,7 @@ export default function PortalPage() {
       const respuesta = await fetch("/api/mcp/tokens", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre: `Integración ${datosAcceso.tokens.filter((item) => !item.revocado_en).length + 1}`, scopes }),
+        body: JSON.stringify({ nombre: nombre ?? `Integración ${datosAcceso.tokens.filter((item) => !item.revocado_en).length + 1}`, scopes }),
       });
       const resultado = await respuesta.json();
       if (!respuesta.ok) throw new Error(resultado.error);
@@ -217,18 +219,34 @@ function VistaPerfil({ perfil }: { perfil?: Perfil }) {
 }
 
 function VistaSesiones({ datos }: { datos: DatosPortal }) {
+  const [seleccionado, setSeleccionado] = useState<string | null>(datos.sesionesPerfil[0]?.id ?? null);
   const total = datos.sesionesPerfil.length + datos.conversaciones.length;
-  return <><Encabezado etiqueta="ACTIVITY LOG" titulo="Sesiones" descripcion="Historial de perfiles generados y conversaciones guardadas en tu contexto." accion={<Link href="/intake/problema" className={styles.primaryAction}>+ Iniciar sesión</Link>} /><section className={styles.tablePanel}><div className={styles.tableToolbar}><div><strong>{total} registros</strong><span>Ordenados por actividad reciente</span></div><Estado tono="ok">Persistencia activa</Estado></div><div className={styles.dataTable}><div className={styles.tableHead}><span>Tipo</span><span>Nombre</span><span>Estado</span><span>Actualización</span><span>ID</span></div>{datos.sesionesPerfil.map((item) => <div className={styles.tableRow} key={item.id}><span><i className={styles.typeIcon}>PF</i></span><strong>Perfil financiero v{item.version}</strong><Estado tono="ok">Generado</Estado><span>{fecha(item.generadoEn)}</span><code>{item.id.slice(0, 8)}</code></div>)}{datos.conversaciones.map((item) => <div className={styles.tableRow} key={item.id}><span><i className={styles.typeIcon}>AI</i></span><strong>{item.titulo || "Conversación con el agente"}</strong><Estado>Guardada</Estado><span>{fecha(item.actualizadoEn)}</span><code>{item.id.slice(0, 8)}</code></div>)}</div></section></>;
+  const sesion = datos.sesionesPerfil.find((item) => item.id === seleccionado);
+  return <><Encabezado etiqueta="ACTIVITY LOG" titulo="Historial de perfiles" descripcion="Cada sesión conserva la fotografía completa del perfil que se generó en ese momento." accion={<Link href="/intake/problema" className={styles.primaryAction}>+ Iniciar sesión</Link>} /><div className={styles.sessionLayout}><section className={styles.tablePanel}><div className={styles.tableToolbar}><div><strong>{total} registros</strong><span>Selecciona un perfil para abrir su detalle</span></div><Estado tono="ok">Persistencia activa</Estado></div><div className={styles.dataTable}><div className={styles.tableHead}><span>Tipo</span><span>Nombre</span><span>Estado</span><span>Actualización</span><span>ID</span></div>{datos.sesionesPerfil.map((item) => <button type="button" aria-pressed={seleccionado === item.id} onClick={() => setSeleccionado(item.id)} className={`${styles.tableRow} ${seleccionado === item.id ? styles.selectedRow : ""}`} key={item.id}><span><i className={styles.typeIcon}>PF</i></span><strong>Perfil financiero v{item.version}</strong><Estado tono="ok">Generado</Estado><span>{fecha(item.generadoEn)}</span><code>{item.id.slice(0, 8)}</code></button>)}{datos.conversaciones.map((item) => <div className={styles.tableRow} key={item.id}><span><i className={styles.typeIcon}>AI</i></span><strong>{item.titulo || "Conversación con el agente"}</strong><Estado>Guardada</Estado><span>{fecha(item.actualizadoEn)}</span><code>{item.id.slice(0, 8)}</code></div>)}</div></section>{sesion && <DetalleSesion sesion={sesion} />}</div></>;
+}
+
+function esPerfilNarrativo(valor: Perfil | Record<string, unknown>): valor is Perfil {
+  return "narrativa" in valor && "perfilBase" in valor;
+}
+
+function DetalleSesion({ sesion }: { sesion: DatosPortal["sesionesPerfil"][number] }) {
+  if (!esPerfilNarrativo(sesion.perfil)) return <aside className={styles.sessionDetail}><div className={styles.detailHeader}><div><span>SNAPSHOT / LEGACY</span><h3>Perfil v{sesion.version}</h3></div><Estado>Histórico</Estado></div><p className={styles.legacyNotice}>Esta generación usa el contrato anterior. Se conserva completa para auditoría.</p><pre className={styles.legacyJson}>{JSON.stringify(sesion.perfil, null, 2)}</pre></aside>;
+  const perfil = sesion.perfil;
+  return <aside className={styles.sessionDetail}><div className={styles.detailHeader}><div><span>PROFILE SNAPSHOT / {sesion.id.slice(0, 8)}</span><h3>{perfil.problema?.titulo ?? "Perfil financiero"}</h3><p>{fecha(sesion.generadoEn)} · {perfil.generadoPor.modelo}</p></div><Estado tono="ok">v{sesion.version}</Estado></div><div className={styles.detailQuality}><strong>{perfil.perfilBase.calidadDatos.completitud}%</strong><span>completitud al generar</span><i><b style={{ width: `${perfil.perfilBase.calidadDatos.completitud}%` }} /></i></div><p className={styles.detailSummary}>{perfil.narrativa.resumenEjecutivo}</p><dl className={styles.detailMetrics}><div><dt>Ingreso observado</dt><dd>{COP.format(perfil.perfilBase.ingresos.verificado.valor ?? 0)}</dd></div><div><dt>Flujo libre</dt><dd>{COP.format(perfil.perfilBase.flujo.flujoLibreObservado.valor ?? 0)}</dd></div><div><dt>Carga financiera</dt><dd>{(perfil.perfilBase.obligaciones.cargaFinanciera.valor ?? 0).toFixed(1)}%</dd></div><div><dt>Patrimonio</dt><dd>{COP.format(perfil.perfilBase.patrimonio.total.valor ?? 0)}</dd></div></dl><div className={styles.detailSection}><span>SEÑALES</span>{[...perfil.narrativa.fortalezas, ...perfil.narrativa.alertas].map((item) => <article key={item.titulo}><strong>{item.titulo}</strong><p>{item.detalle}</p></article>)}</div><div className={styles.detailSection}><span>ACCIONES PROPUESTAS</span>{perfil.narrativa.prioridades.map((item, indice) => <article key={item.titulo}><strong>0{indice + 1} · {item.titulo}</strong><p>{item.proximoPaso}</p></article>)}</div></aside>;
 }
 
 function VistaArchivos({ documentos, abrirDocumento }: { documentos: DatosPortal["documentos"]; abrirDocumento: (id: string) => Promise<void> }) {
   return <><Encabezado etiqueta="CONTEXT STORAGE" titulo="Archivos" descripcion="Documentos privados vinculados a tu contexto. Cada apertura usa una URL temporal." accion={<Link href="/intake" className={styles.primaryAction}>+ Agregar archivo</Link>} /><section className={styles.storageSummary}><div><span>Objetos almacenados</span><strong>{documentos.length}</strong></div><div><span>Acceso</span><strong>Privado</strong></div><div><span>Entrega</span><strong>Signed URL</strong></div><div><span>Retención</span><strong>Bajo tu control</strong></div></section><section className={styles.tablePanel}><div className={styles.tableToolbar}><div><strong>Storage / documentos</strong><span>Selecciona un archivo para abrirlo de forma segura</span></div><code>bucket:private</code></div>{documentos.length ? <div className={styles.dataTable}><div className={`${styles.tableHead} ${styles.fileColumns}`}><span>Archivo</span><span>Tipo</span><span>Extracción</span><span>Creado</span><span /></div>{documentos.map((item) => <button type="button" onClick={() => void abrirDocumento(item.id)} className={`${styles.tableRow} ${styles.fileColumns}`} key={item.id}><strong className={styles.fileName}><i>⌑</i>{item.nombre}</strong><code>{item.tipo}</code><Estado tono={item.estado === "completado" ? "ok" : "neutral"}>{item.estado}</Estado><span>{fecha(item.creadoEn)}</span><span className={styles.openArrow}>↗</span></button>)}</div> : <div className={styles.inlineEmpty}><p>No hay objetos en este bucket.</p><Link href="/intake">Subir el primero →</Link></div>}</section></>;
 }
 
-function VistaIntegraciones({ scopes, setScopes, token, creando, crearAcceso, accesos, revocarAcceso, copiar, copiado }: { scopes: string[]; setScopes: (scopes: string[]) => void; token: string | null; creando: boolean; crearAcceso: () => Promise<void>; accesos: Acceso[]; revocarAcceso: (id: string) => Promise<void>; copiar: (valor: string, id: string) => Promise<void>; copiado: string | null }) {
+function VistaIntegraciones({ scopes, setScopes, token, creando, crearAcceso, accesos, revocarAcceso, copiar, copiado }: { scopes: string[]; setScopes: (scopes: string[]) => void; token: string | null; creando: boolean; crearAcceso: (nombre?: string) => Promise<void>; accesos: Acceso[]; revocarAcceso: (id: string) => Promise<void>; copiar: (valor: string, id: string) => Promise<void>; copiado: string | null }) {
   const endpoint = "https://pa-lante-mcp.vercel.app/mcp";
   const activos = accesos.filter((item) => !item.revocado_en);
   return <><Encabezado etiqueta="DEVELOPER PLATFORM" titulo="API & MCP" descripcion="Expón únicamente el contexto que necesitas. Cada token tiene permisos independientes y auditables." accion={<Estado tono="ok">MCP online</Estado>} />
+    <section className={styles.platformGrid}>
+      <article className={styles.platformCard}><div className={styles.platformLogo}>AI</div><div><span>CLAUDE / CLAUDE CODE</span><h3>Continúa con Claude</h3><p>Genera un acceso y agrega Pa&apos;lante como MCP remoto. Claude Code y Desktop aceptan el encabezado Bearer actual.</p></div><div className={styles.platformActions}><button type="button" onClick={() => void crearAcceso("Claude")}>Generar acceso</button><a href="https://claude.ai/settings/connectors" target="_blank" rel="noreferrer">Abrir Claude ↗</a></div></article>
+      <article className={styles.platformCard}><div className={`${styles.platformLogo} ${styles.chatgptLogo}`}>◎</div><div><span>CHATGPT / DEVELOPER MODE</span><h3>Prepara la app para ChatGPT</h3><p>El cliente ya admite MCP remoto. La conexión autenticada de Pa&apos;lante requiere completar OAuth.</p></div><div className={styles.platformActions}><span className={styles.betaBadge}>OAUTH PENDIENTE</span><a href="https://chatgpt.com" target="_blank" rel="noreferrer">Abrir ChatGPT ↗</a></div></article>
+    </section>
     <section className={styles.devIntro}><div><span className={styles.codePrompt}>$</span><div><p>Conecta tu contexto financiero a Claude, Cursor o cualquier cliente MCP.</p><code>{endpoint}</code></div></div><button type="button" onClick={() => void copiar(endpoint, "endpoint")}>{copiado === "endpoint" ? "Copiado ✓" : "Copiar endpoint"}</button></section>
     <div className={styles.developerGrid}><section className={styles.scopePanel}><div className={styles.panelHeader}><div><span>PERMISSION SET</span><h3>Scopes del nuevo token</h3></div><span className={styles.count}>{scopes.length}/9</span></div><p className={styles.helperText}>La herramienta MCP solo registra y devuelve las secciones seleccionadas.</p><div className={styles.scopeList}>{OPCIONES.map(([id, titulo, detalle]) => { const activo = scopes.includes(id); return <label key={id} className={activo ? styles.scopeActive : ""}><input type="checkbox" checked={activo} onChange={() => setScopes(activo ? scopes.filter((scope) => scope !== id) : [...scopes, id])} /><span className={styles.customCheck}>{activo ? "✓" : ""}</span><span><strong>{titulo}</strong><small>{detalle}</small></span><code>{id}</code></label>; })}</div><div className={styles.scopeFooter}><p><strong>Principio de mínimo privilegio</strong><span>Empieza con lo mínimo. Puedes crear otro token después.</span></p><button type="button" disabled={!scopes.length || creando} onClick={() => void crearAcceso()}>{creando ? "Generando…" : "Generar token"}</button></div>{token && <div className={styles.tokenReveal}><div><span>NEW SECRET · SOLO SE MUESTRA UNA VEZ</span><code>{token}</code></div><button type="button" onClick={() => void copiar(token, "token")}>{copiado === "token" ? "Copiado ✓" : "Copiar"}</button></div>}</section>
       <aside className={styles.integrationAside}><section className={styles.endpointCard}><div className={styles.panelHeader}><div><span>QUICK START</span><h3>Configurar cliente</h3></div></div><pre>{`{\n  "mcpServers": {\n    "palante": {\n      "url": "${endpoint}",\n      "headers": {\n        "Authorization": "Bearer <token>"\n      }\n    }\n  }\n}`}</pre><p>Transport <code>streamable-http</code></p></section><section className={styles.tokensCard}><div className={styles.panelHeader}><div><span>ACTIVE KEYS</span><h3>Tokens</h3></div><span className={styles.count}>{activos.length}</span></div><div className={styles.tokenList}>{activos.length ? activos.map((item) => <article key={item.id}><div><span><i />{item.nombre}</span><code>{item.prefijo}••••••••</code><small>{item.ultimo_uso ? `Último uso ${fecha(item.ultimo_uso)}` : "Sin uso todavía"} · {item.scopes.length} scopes</small></div><button type="button" onClick={() => void revocarAcceso(item.id)}>Revocar</button></article>) : <p className={styles.noTokens}>No hay tokens activos.</p>}</div></section></aside>
