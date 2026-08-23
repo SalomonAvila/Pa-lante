@@ -1,17 +1,37 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 /**
- * Cinco consentimientos separados (sección 26 del pedido) — nunca un único
- * checkbox genérico. Append-only: revocar es otorgar una fila nueva con
- * `otorgado=false`, así queda trazable cuándo y con qué versión se aceptó o
- * se revocó cada uno.
+ * Consentimientos separados (sección 26 del pedido original, ampliados con
+ * sección 20 del pedido de DIAN/DataCrédito) — nunca un único checkbox
+ * genérico. `dian_lectura`/`datacredito_lectura` cubren "conéctate y lee mi
+ * cuenta ahí"; `dian_documento`/`datacredito_documento` cubren "acepto que
+ * proceses un documento que yo mismo subo" — son cosas distintas, el usuario
+ * puede otorgar una sin la otra. Append-only: revocar es otorgar una fila
+ * nueva con `otorgado=false`, así queda trazable cuándo y con qué versión se
+ * aceptó o se revocó cada uno.
  */
 export type TipoConsentimiento =
   | "tratamiento_basico"
   | "perfil_financiero"
   | "conexion_externa"
   | "lectura_correo_otp"
-  | "procesamiento_documentos";
+  | "procesamiento_documentos"
+  | "dian_lectura"
+  | "datacredito_lectura"
+  | "dian_documento"
+  | "datacredito_documento";
+
+export const TIPOS_CONSENTIMIENTO: TipoConsentimiento[] = [
+  "tratamiento_basico",
+  "perfil_financiero",
+  "conexion_externa",
+  "lectura_correo_otp",
+  "procesamiento_documentos",
+  "dian_lectura",
+  "datacredito_lectura",
+  "dian_documento",
+  "datacredito_documento",
+];
 
 export type EventoConsentimiento = {
   id: string;

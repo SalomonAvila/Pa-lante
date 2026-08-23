@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { clienteAutenticado } from "@/lib/supabase/route-auth";
 import { construirRuta, subirDocumento } from "@/lib/storage/documentos";
 import { extractorDocumentos } from "@/lib/documentos/extractor";
+import { descifrarCampo } from "@/lib/seguridad/vault";
 
 const TIPOS_VALIDOS = ["cedula_frontal", "cedula_posterior"] as const;
 
@@ -22,11 +23,11 @@ export async function POST(request: Request) {
 
   const { data: persona, error: personaError } = await supabase
     .from("personas")
-    .select("nombres, apellidos, numero_documento, fecha_nacimiento, fecha_expedicion")
+    .select("nombres, apellidos, numero_documento_cifrado, fecha_nacimiento, fecha_expedicion")
     .eq("user_id", user.id)
     .maybeSingle();
 
-  if (personaError || !persona) {
+  if (personaError || !persona || !persona.numero_documento_cifrado) {
     return NextResponse.json({ error: "Completa primero tus datos personales" }, { status: 400 });
   }
 
@@ -36,16 +37,22 @@ export async function POST(request: Request) {
   const resultado = await extractorDocumentos.extraerIdentidad({
     nombres: persona.nombres,
     apellidos: persona.apellidos,
-    numeroDocumento: persona.numero_documento,
+    numeroDocumento: descifrarCampo(persona.numero_documento_cifrado),
     fechaNacimiento: persona.fecha_nacimiento,
     fechaExpedicion: persona.fecha_expedicion,
   });
+
+  // El vault (sección 15 del pedido) es explícito: el número de documento
+  // nunca se duplica fuera de `personas.numero_documento_cifrado`. `campos`
+  // solo se usa para decidir `coincide` — lo que se persiste en
+  // `ocr_resultado` excluye el número de documento a propósito.
+  const { numeroDocumento: _numeroDocumento, ...camposSinDocumento } = resultado.campos;
 
   const { error: insertError } = await supabase.from("documentos_identidad").insert({
     persona_id: user.id,
     tipo,
     storage_path: ruta,
-    ocr_resultado: resultado.campos,
+    ocr_resultado: camposSinDocumento,
     coincide: resultado.coincide,
   });
   if (insertError) return NextResponse.json({ error: insertError.message }, { status: 500 });

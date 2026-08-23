@@ -22,52 +22,6 @@ export type Deuda = {
   cuotaMensual: number | null;
 };
 
-export type Plan = {
-  meta: string;
-  aporteMensual: number;
-  pasos: string[];
-  supuestos: string[];
-  fechaObjetivo: string;
-};
-
-/**
- * Vista derivada para el router de diagnóstico por reglas explícitas
- * (web/src/lib/diagnostico/reglas.ts, principio #1 de PRODUCT.md) — un caso
- * de uso concreto sobre el núcleo, igual que PruebaCapacidadPagoV1 más abajo
- * lo es para "evaluar_capacidad_arriendo". No se fusiona con
- * PerfilFinancieroV1: son dos vistas distintas sobre los mismos datos base
- * (transacciones/deudas/hallazgos), cada una con su propio propósito.
- */
-export type EstadoFinanciero = {
-  periodo: { desde: string; hasta: string; meses: number };
-  ingresoMensual: number;
-  gastoMensual: number;
-  flujoNeto: number;
-  gastoPorCategoria: Record<string, number>;
-  gastoSinCategorizar: number;
-  deudas: Deuda[];
-  calidadDatos: {
-    transacciones: number;
-    sinCategorizar: number;
-    confianzaMedia: number;
-  };
-};
-
-export type ReglaEvaluada = {
-  id: string;
-  descripcion: string;
-  umbral: string;
-  valorObservado: string;
-  cumple: boolean;
-};
-
-export type Diagnostico = {
-  ruta: "salida-de-deudas" | "visibilidad" | "meta-de-ahorro";
-  razon: string;
-  reglas: ReglaEvaluada[];
-  advertencias: string[];
-};
-
 export type TipoHallazgo =
   | "income"
   | "liability"
