@@ -34,6 +34,17 @@ async function consultarCompletitud(): Promise<Completitud> {
   return res.json();
 }
 
+type ContactoBasico = {
+  nombres: string;
+  apellidos: string;
+  tipo_documento: string | null;
+  numero_documento: string | null;
+  celular: string;
+  ciudad: string | null;
+};
+
+const TIPOS_DOCUMENTO = ["CC", "CE", "TI", "PA", "NIT"] as const;
+
 function OnboardingInner() {
   const router = useRouter();
   const [texto, setTexto] = useState("");
@@ -42,35 +53,77 @@ function OnboardingInner() {
   const [completitud, setCompletitud] = useState<Completitud | null>(null);
   const [vozId, setVozId] = useState<string>(VOCES[0].id);
 
-  // /intake ya requiere sesión (proxy.ts) — esto es lo mínimo para poder
-  // contactar al usuario e identificarlo en integraciones más adelante
-  // (DIAN, DataCrédito), no el KYC completo. null = todavía no se sabe.
-  const [contactoListo, setContactoListo] = useState<boolean | null>(null);
-  const [nombreContacto, setNombreContacto] = useState("");
-  const [celularContacto, setCelularContacto] = useState("");
+  // /intake ya requiere sesión (proxy.ts). Este dato queda asociado al
+  // usuario (contacto_basico.user_id, RLS por dueño) — si ya lo había
+  // llenado antes, se le muestra para que elija editar o seguir, en vez de
+  // saltárselo en silencio. No es el KYC completo de `personas` (sin fecha
+  // de nacimiento, dirección exacta) — eso se pide más adelante cuando haga
+  // falta para una integración concreta.
+  const [faseContacto, setFaseContacto] = useState<"cargando" | "revisar" | "formulario" | "listo">("cargando");
+  const [contacto, setContacto] = useState<ContactoBasico | null>(null);
+  const [formNombres, setFormNombres] = useState("");
+  const [formApellidos, setFormApellidos] = useState("");
+  const [formTipoDocumento, setFormTipoDocumento] = useState<string>(TIPOS_DOCUMENTO[0]);
+  const [formNumeroDocumento, setFormNumeroDocumento] = useState("");
+  const [formCelular, setFormCelular] = useState("");
+  const [formCiudad, setFormCiudad] = useState("");
   const [guardandoContacto, setGuardandoContacto] = useState(false);
   const [errorContacto, setErrorContacto] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/perfil/contacto")
       .then((res) => (res.ok ? res.json() : { contacto: null }))
-      .then((data) => setContactoListo(Boolean(data.contacto)))
-      .catch(() => setContactoListo(false));
+      .then((data: { contacto: ContactoBasico | null }) => {
+        if (data.contacto) {
+          setContacto(data.contacto);
+          setFaseContacto("revisar");
+        } else {
+          setFaseContacto("formulario");
+        }
+      })
+      .catch(() => setFaseContacto("formulario"));
   }, []);
+
+  function abrirFormularioContacto() {
+    setFormNombres(contacto?.nombres ?? "");
+    setFormApellidos(contacto?.apellidos ?? "");
+    setFormTipoDocumento(contacto?.tipo_documento ?? TIPOS_DOCUMENTO[0]);
+    setFormNumeroDocumento(contacto?.numero_documento ?? "");
+    setFormCelular(contacto?.celular ?? "");
+    setFormCiudad(contacto?.ciudad ?? "");
+    setErrorContacto(null);
+    setFaseContacto("formulario");
+  }
 
   async function guardarContacto(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!nombreContacto.trim() || !celularContacto.trim()) return;
+    if (!formNombres.trim() || !formApellidos.trim() || !formNumeroDocumento.trim() || !formCelular.trim()) return;
     setGuardandoContacto(true);
     setErrorContacto(null);
     try {
+      const nuevo: ContactoBasico = {
+        nombres: formNombres.trim(),
+        apellidos: formApellidos.trim(),
+        tipo_documento: formTipoDocumento,
+        numero_documento: formNumeroDocumento.trim(),
+        celular: formCelular.trim(),
+        ciudad: formCiudad.trim() || null,
+      };
       const res = await fetch("/api/perfil/contacto", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre: nombreContacto.trim(), celular: celularContacto.trim() }),
+        body: JSON.stringify({
+          nombres: nuevo.nombres,
+          apellidos: nuevo.apellidos,
+          tipoDocumento: nuevo.tipo_documento,
+          numeroDocumento: nuevo.numero_documento,
+          celular: nuevo.celular,
+          ciudad: nuevo.ciudad ?? "",
+        }),
       });
       if (!res.ok) throw new Error("No se pudo guardar");
-      setContactoListo(true);
+      setContacto(nuevo);
+      setFaseContacto("listo");
     } catch {
       setErrorContacto("No pudimos guardar tus datos. Intenta de nuevo.");
     } finally {
@@ -178,7 +231,7 @@ function OnboardingInner() {
   const suficiente = (completitud?.porcentaje ?? 0) >= UMBRAL_COMPLETITUD;
 
   // --- Cargando: todavía no sabemos si ya dio sus datos de contacto.
-  if (contactoListo === null) {
+  if (faseContacto === "cargando") {
     return (
       <div className="relative flex min-h-screen flex-1 items-center justify-center px-6 py-16 text-white">
         <VideoBackdrop />
@@ -186,10 +239,9 @@ function OnboardingInner() {
     );
   }
 
-  // --- Datos de contacto: lo mínimo para identificar/contactar al usuario,
-  // no el KYC completo — eso se pide más adelante cuando haga falta para
-  // una integración concreta.
-  if (!contactoListo) {
+  // --- Revisar: ya había llenado sus datos antes — se le muestran, no se
+  // salta en silencio. Puede editarlos o seguir directo.
+  if (faseContacto === "revisar" && contacto) {
     return (
       <div className="relative flex min-h-screen flex-1 flex-col items-center justify-center gap-8 px-6 py-16 text-white">
         <VideoBackdrop />
@@ -198,26 +250,103 @@ function OnboardingInner() {
 
         <div className="relative z-10 flex w-full max-w-sm flex-col items-center gap-6 text-center">
           <div>
-            <h1 className="headline-md">Antes de empezar</h1>
+            <h1 className="headline-md">Ya tenemos tus datos</h1>
+            <p className="mt-2 body-md text-white/70">Los que diste la última vez.</p>
+          </div>
+
+          <div className="flex w-full flex-col gap-2 rounded-2xl border border-white/15 bg-black/40 p-5 text-left backdrop-blur-md">
+            <p className="body-md">
+              {contacto.nombres} {contacto.apellidos}
+            </p>
+            {contacto.tipo_documento && contacto.numero_documento && (
+              <p className="text-sm text-white/60">
+                {contacto.tipo_documento} {contacto.numero_documento}
+              </p>
+            )}
+            <p className="text-sm text-white/60">{contacto.celular}</p>
+            {contacto.ciudad && <p className="text-sm text-white/60">{contacto.ciudad}</p>}
+          </div>
+
+          <div className="flex w-full flex-col gap-3 sm:flex-row">
+            <Button type="button" variant="secondary" onClick={abrirFormularioContacto} className="flex-1">
+              Editar
+            </Button>
+            <Button type="button" onClick={() => setFaseContacto("listo")} className="flex-1">
+              Continuar
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // --- Formulario: primera vez, o editando lo que ya había. Lo mínimo para
+  // identificar/contactar al usuario, no el KYC completo — eso se pide más
+  // adelante cuando haga falta para una integración concreta.
+  if (faseContacto === "formulario") {
+    return (
+      <div className="relative flex min-h-screen flex-1 flex-col items-center justify-center gap-8 px-6 py-16 text-white">
+        <VideoBackdrop />
+        <BackHomeButton theme="dark" />
+        <AvatarUsuario theme="dark" flotante />
+
+        <div className="relative z-10 flex w-full max-w-sm flex-col items-center gap-6 text-center">
+          <div>
+            <h1 className="headline-md">{contacto ? "Editar tus datos" : "Antes de empezar"}</h1>
             <p className="mt-2 body-md text-white/70">
-              Solo lo básico para poder contactarte y, más adelante, conectar tus fuentes.
+              Lo básico para contactarte y, más adelante, identificarte al conectar tus fuentes (DIAN, DataCrédito).
             </p>
           </div>
 
           <form onSubmit={guardarContacto} className="flex w-full flex-col gap-3">
+            <div className="flex gap-2">
+              <input
+                value={formNombres}
+                onChange={(e) => setFormNombres(e.target.value)}
+                placeholder="Nombres"
+                required
+                className="w-full rounded-full border border-white/20 bg-black/40 px-4 py-2.5 body-md text-white outline-none backdrop-blur-md focus:border-2 focus:border-white"
+              />
+              <input
+                value={formApellidos}
+                onChange={(e) => setFormApellidos(e.target.value)}
+                placeholder="Apellidos"
+                required
+                className="w-full rounded-full border border-white/20 bg-black/40 px-4 py-2.5 body-md text-white outline-none backdrop-blur-md focus:border-2 focus:border-white"
+              />
+            </div>
+            <div className="flex gap-2">
+              <select
+                value={formTipoDocumento}
+                onChange={(e) => setFormTipoDocumento(e.target.value)}
+                className="rounded-full border border-white/20 bg-black/40 px-4 py-2.5 body-md text-white outline-none backdrop-blur-md focus:border-2 focus:border-white"
+              >
+                {TIPOS_DOCUMENTO.map((tipo) => (
+                  <option key={tipo} value={tipo} className="bg-black text-white">
+                    {tipo}
+                  </option>
+                ))}
+              </select>
+              <input
+                value={formNumeroDocumento}
+                onChange={(e) => setFormNumeroDocumento(e.target.value)}
+                placeholder="Número de documento"
+                required
+                className="w-full rounded-full border border-white/20 bg-black/40 px-4 py-2.5 body-md text-white outline-none backdrop-blur-md focus:border-2 focus:border-white"
+              />
+            </div>
             <input
-              value={nombreContacto}
-              onChange={(e) => setNombreContacto(e.target.value)}
-              placeholder="Tu nombre"
+              value={formCelular}
+              onChange={(e) => setFormCelular(e.target.value)}
+              placeholder="Celular"
+              type="tel"
               required
               className="w-full rounded-full border border-white/20 bg-black/40 px-4 py-2.5 body-md text-white outline-none backdrop-blur-md focus:border-2 focus:border-white"
             />
             <input
-              value={celularContacto}
-              onChange={(e) => setCelularContacto(e.target.value)}
-              placeholder="Tu celular"
-              type="tel"
-              required
+              value={formCiudad}
+              onChange={(e) => setFormCiudad(e.target.value)}
+              placeholder="Ciudad (opcional)"
               className="w-full rounded-full border border-white/20 bg-black/40 px-4 py-2.5 body-md text-white outline-none backdrop-blur-md focus:border-2 focus:border-white"
             />
             {errorContacto && (
@@ -228,6 +357,15 @@ function OnboardingInner() {
             <Button type="submit" disabled={guardandoContacto} className="mt-2">
               {guardandoContacto ? "Guardando…" : "Continuar"}
             </Button>
+            {contacto && (
+              <button
+                type="button"
+                onClick={() => setFaseContacto("revisar")}
+                className="label-md text-white/50 underline"
+              >
+                Cancelar
+              </button>
+            )}
           </form>
         </div>
       </div>
