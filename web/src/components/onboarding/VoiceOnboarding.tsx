@@ -16,6 +16,18 @@ const AGENT_ID = process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID;
 /** Cuánto necesitamos saber antes de dar por terminada la conversación. */
 const UMBRAL_COMPLETITUD = 80;
 
+/**
+ * Voces disponibles para el agente — el agente en ElevenLabs tiene habilitado
+ * el override de tts.voice_id por sesión (platform_settings.overrides), así
+ * que esto no cambia la personalidad/prompt, solo con qué voz habla.
+ */
+const VOCES = [
+  { id: "wKvrrFnAmhvpNRpZkbmh", nombre: "Diana", descripcion: "Colombiana, cálida" },
+  { id: "xzUwWse1B1nyc4pXhaLG", nombre: "Andrés", descripcion: "Argentino, calmado" },
+  { id: "DZWBGWAunK78dZTFw1Ag", nombre: "Valeria", descripcion: "Latina, segura" },
+  { id: "zsjfif2v09thEBtkBYFe", nombre: "Yeiden", descripcion: "Latino, cálido" },
+] as const;
+
 type Resumen = {
   porcentajeIngresoVerificado: number | null;
   ingresoMensualVerificado: number | null;
@@ -42,6 +54,7 @@ function OnboardingInner() {
   const [error, setError] = useState<string | null>(null);
   const [completitud, setCompletitud] = useState<Completitud | null>(null);
   const [resumen, setResumen] = useState<Resumen | null>(null);
+  const [vozId, setVozId] = useState<string>(VOCES[0].id);
 
   const conversation = useConversation({
     onError: (message) => setError(message),
@@ -89,6 +102,7 @@ function OnboardingInner() {
       setCompletitud(inicial);
       await conversation.startSession({
         agentId: AGENT_ID,
+        overrides: { tts: { voiceId: vozId } },
         dynamicVariables: {
           porcentaje_completado: inicial.porcentaje,
           campos_faltantes: inicial.camposFaltantes.join(", ") || "ninguno todavía",
@@ -97,7 +111,7 @@ function OnboardingInner() {
     } catch {
       setError("No pudimos acceder al micrófono. Puedes escribir en su lugar.");
     }
-  }, [conversation]);
+  }, [conversation, vozId]);
 
   const empezarConTexto = useCallback(async () => {
     if (!AGENT_ID) {
@@ -111,6 +125,7 @@ function OnboardingInner() {
       await conversation.startSession({
         agentId: AGENT_ID,
         connectionType: "websocket",
+        overrides: { tts: { voiceId: vozId } },
         dynamicVariables: {
           porcentaje_completado: inicial.porcentaje,
           campos_faltantes: inicial.camposFaltantes.join(", ") || "ninguno todavía",
@@ -120,7 +135,7 @@ function OnboardingInner() {
     } catch {
       setError("No pudimos iniciar la conversación. Intenta de nuevo.");
     }
-  }, [conversation]);
+  }, [conversation, vozId]);
 
   function enviarTexto(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -262,6 +277,29 @@ function OnboardingInner() {
             Con qué sueñas, qué meta financiera tienes en mente, cómo están tus finanzas hoy — en el orden que
             quieras, por voz o por texto.
           </p>
+        </div>
+
+        <div className="flex flex-col items-center gap-2">
+          <p className="text-xs uppercase tracking-wide text-white/40">Elige una voz</p>
+          <div className="flex flex-wrap justify-center gap-2">
+            {VOCES.map((voz) => (
+              <button
+                key={voz.id}
+                type="button"
+                onClick={() => setVozId(voz.id)}
+                disabled={conectando}
+                aria-pressed={vozId === voz.id}
+                title={voz.descripcion}
+                className={`rounded-full px-4 py-1.5 text-xs font-medium transition-colors duration-300 ${
+                  vozId === voz.id
+                    ? "bg-white text-black"
+                    : "bg-white/10 text-white/60 hover:bg-white/20 hover:text-white"
+                }`}
+              >
+                {voz.nombre}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="flex w-full max-w-xs flex-col gap-3 sm:flex-row">

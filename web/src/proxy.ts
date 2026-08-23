@@ -3,14 +3,13 @@ import { createServerClient } from "@supabase/ssr";
 
 // "/registro" y "/registro/verificar-correo" quedan afuera a propósito: ahí
 // todavía no hay sesión (signUp sin confirmar / la página que la establece).
+// "/intake" queda afuera a propósito también: la auth para el flujo de voz
+// está diferida por ahora (decisión explícita), así que no puede depender de
+// una sesión que todavía no existe.
 const RUTAS_PROTEGIDAS = [
-  "/journey",
-  "/insights",
-  "/intake",
   "/registro/verificar-identidad",
   "/registro/autorizacion",
   "/perfil",
-  "/panorama",
   "/configuracion",
   "/asistente",
 ];
@@ -57,7 +56,7 @@ export default async function proxy(request: NextRequest) {
   }
 
   if (user && pathname === "/login") {
-    return NextResponse.redirect(new URL("/journey", request.url));
+    return NextResponse.redirect(new URL("/intake", request.url));
   }
 
   return response;
@@ -65,14 +64,10 @@ export default async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/journey/:path*",
-    "/insights/:path*",
-    "/intake/:path*",
     "/login",
     "/registro/verificar-identidad/:path*",
     "/registro/autorizacion/:path*",
     "/perfil/:path*",
-    "/panorama/:path*",
     "/configuracion/:path*",
     "/asistente/:path*",
   ],
