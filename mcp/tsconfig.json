@@ -18,7 +18,13 @@
       // El modelo de datos vive en web/ y NO se duplica acá: si los tipos se
       // copiaran, los dos frentes derivarían y el contrato se rompería en
       // silencio. web/src/types/finance.ts es la única fuente de verdad.
-      "@web/*": ["../web/src/*"]
+      "@web/*": ["../web/src/*"],
+      // Mismo target que @web/*: los archivos compartidos bajo web/src/lib/
+      // (ej. diagnostico/reglas.ts, inteligencia/*) usan el alias propio de
+      // web ("@/*") internamente. Sin este mapeo, tsc resuelve bien esos
+      // imports al compilar web/ pero no al compilar mcp/, que también los
+      // typechecka por ser dependencias transitivas de @web/*.
+      "@/*": ["../web/src/*"]
     }
   },
   "include": ["src/**/*.ts", "api/**/*.ts", "../web/src/types/**/*.ts", "../web/src/lib/mcp/**/*.ts"]

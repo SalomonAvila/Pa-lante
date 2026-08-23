@@ -2,7 +2,10 @@ import { createClient } from "@supabase/supabase-js";
 import { hashTokenMcp } from "@web/lib/mcp/tokens.js";
 
 /**
- * ÚNICO punto del código que usa la clave secreta de Supabase.
+ * ÚNICO punto del código que construye un cliente con la clave secreta de
+ * Supabase — todo lo demás en mcp/ (estado.ts, las tools de
+ * inteligencia/...) pide el cliente ya armado acá, nunca lee
+ * SUPABASE_SERVICE_ROLE_KEY directamente.
  *
  * Por qué hace falta: un agente llama al MCP sin sesión de navegador, así que
  * no hay JWT de usuario y RLS no puede resolver auth.uid(). Resolvemos el
@@ -10,7 +13,7 @@ import { hashTokenMcp } from "@web/lib/mcp/tokens.js";
  * filtra explícitamente por user_id. RLS sigue siendo la red de seguridad del
  * cliente web; acá la disciplina es el filtro explícito.
  */
-function clienteServicio() {
+export function clienteServicio() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const secret = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !secret) return null;
