@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { VideoBackdrop } from "@/components/shared/VideoBackdrop";
 import { createClient } from "@/lib/supabase/client";
+import { AvatarUsuario } from "@/components/auth/AvatarUsuario";
 import { Logotipo } from "@/components/shared/Logotipo";
 import styles from "./landing.module.css";
 
@@ -117,7 +117,6 @@ export function LandingExperience() {
   // Si ya hay sesión, el proxy manda "/login" → "/intake", así que ofrecer
   // "Entrar" sería un callejón sin salida: la única forma de volver a ver el
   // login es cerrar sesión desde acá.
-  const router = useRouter();
   const [haySesion, setHaySesion] = useState(false);
 
   useEffect(() => {
@@ -128,13 +127,6 @@ export function LandingExperience() {
     );
     return () => sub.subscription.unsubscribe();
   }, []);
-
-  async function cerrarSesion() {
-    await createClient().auth.signOut();
-    setHaySesion(false);
-    setMenuAbierto(false);
-    router.refresh();
-  }
 
   return (
     <div className={styles.page}>
@@ -158,9 +150,7 @@ export function LandingExperience() {
         </nav>
 
         {haySesion ? (
-          <button type="button" onClick={cerrarSesion} className={styles.entrarDesktop}>
-            Salir
-          </button>
+          <AvatarUsuario theme="dark" />
         ) : (
           <Link href="/login" className={styles.entrarDesktop}>
             Entrar
@@ -201,14 +191,9 @@ export function LandingExperience() {
             </Link>
           ))}
           {haySesion ? (
-            <button
-              type="button"
-              className={styles.menuEntrar}
-              style={conRetraso("0.25s")}
-              onClick={cerrarSesion}
-            >
-              Cerrar sesión
-            </button>
+            <div style={conRetraso("0.25s")} className={styles.menuAvatar}>
+              <AvatarUsuario theme="dark" />
+            </div>
           ) : (
             <Link
               href="/login"

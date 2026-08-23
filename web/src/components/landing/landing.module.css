@@ -531,6 +531,18 @@
 
   .menuLink,
   .menuActivo,
+  /* El avatar ya trae su propio fondo y menú: acá solo se centra y se
+     hereda la animación de entrada de los enlaces del menú móvil. */
+  .menuAvatar {
+    display: grid;
+    min-height: 48px;
+    place-items: center;
+    margin-top: 10px;
+    opacity: 0;
+    animation: linkIn 0.4s ease forwards;
+    animation-delay: var(--d);
+  }
+
   .menuEntrar {
     position: relative;
     display: grid;

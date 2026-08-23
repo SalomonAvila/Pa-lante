@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { VideoBackdrop } from "@/components/shared/VideoBackdrop";
 import { BackHomeButton } from "@/components/shared/BackHomeButton";
-import { CerrarSesionButton } from "@/components/auth/CerrarSesionButton";
+import { AvatarUsuario } from "@/components/auth/AvatarUsuario";
 import type { EventoExpertos } from "@/app/api/expertos/ejecutar/route";
 import type { ExpertoId, ExpertResult } from "@/lib/inteligencia/tipos";
 
@@ -81,7 +81,7 @@ export default function ProgresoExpertosPage() {
     <div className="relative flex min-h-screen flex-1 flex-col items-center gap-8 px-6 py-16 text-white">
       <VideoBackdrop />
       <BackHomeButton theme="dark" />
-      <CerrarSesionButton theme="dark" />
+      <AvatarUsuario theme="dark" flotante />
 
       <div className="relative z-10 flex w-full max-w-lg flex-col items-center gap-8">
         <div className="text-center">
