@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/Button";
 import { ReactiveVoiceCircle } from "./ReactiveVoiceCircle";
 import type { Completitud } from "@/lib/perfil/completitud";
 import type { TipoHallazgo } from "@/types/finance";
+import type { ConexionFuente } from "@/lib/conectores/tipos";
+import { ConectarGmailButton } from "@/components/auth/ConectarGmailButton";
 
 const AGENT_ID = process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID;
 
@@ -45,6 +47,23 @@ type ContactoBasico = {
 
 const TIPOS_DOCUMENTO = ["CC", "CE", "TI", "PA", "NIT"] as const;
 
+/**
+ * Qué quiere lograr el usuario con sus finanzas — deliberadamente distinto
+ * de `ObjetivoAccesoFinanciero`/`planes.tipo_meta` (que sigue fijo a
+ * "demostrar_capacidad_arriendo" para la lógica de PruebaCapacidadPago):
+ * esto es la elección general del usuario, no una vista de divulgación.
+ */
+const OBJETIVOS = [
+  { id: "salir_de_deudas", titulo: "Salir de deudas", descripcion: "Organizar y pagar lo que debo." },
+  { id: "organizar_finanzas", titulo: "Organizar mis finanzas", descripcion: "Entender en qué se me va la plata." },
+  { id: "meta_ahorro", titulo: "Cumplir una meta de ahorro", descripcion: "Estoy ahorrando para algo puntual." },
+  {
+    id: "demostrar_capacidad_arriendo",
+    titulo: "Demostrar capacidad de pago",
+    descripcion: "Necesito respaldo para arrendar.",
+  },
+] as const;
+
 type ArchivoAdjunto = { id: string; nombre: string };
 
 type HallazgoResumen = {
@@ -57,6 +76,8 @@ type HallazgoResumen = {
 };
 
 type DocumentoResumen = { id: string; nombre: string; estado: string; creadoEn: string };
+
+const ESTADOS_TERMINALES_UI = ["completed", "completed_no_data", "failed", "temporarily_unavailable"];
 
 type ResumenFases = {
   contacto: ContactoBasico | null;
@@ -151,16 +172,116 @@ function OnboardingInner() {
     }
   }
 
+  // Selección del problema: entre datos personales y la conversación por
+  // voz. Se guarda una sola vez (objetivo_declarado, PK por user_id); si ya
+  // lo había elegido antes, se salta directo.
+  const [faseObjetivo, setFaseObjetivo] = useState<"cargando" | "elegir" | "listo">("cargando");
+  const [objetivo, setObjetivo] = useState<string | null>(null);
+  const [guardandoObjetivo, setGuardandoObjetivo] = useState(false);
+  const [errorObjetivo, setErrorObjetivo] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/perfil/objetivo")
+      .then((res) => (res.ok ? res.json() : { problema: null }))
+      .then((data: { problema: string | null }) => {
+        setObjetivo(data.problema);
+        setFaseObjetivo(data.problema ? "listo" : "elegir");
+      })
+      .catch(() => setFaseObjetivo("elegir"));
+  }, []);
+
+  async function elegirObjetivo(problema: string) {
+    setGuardandoObjetivo(true);
+    setErrorObjetivo(null);
+    try {
+      const res = await fetch("/api/perfil/objetivo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ problema }),
+      });
+      if (!res.ok) throw new Error();
+      setObjetivo(problema);
+      setFaseObjetivo("listo");
+    } catch {
+      setErrorObjetivo("No pudimos guardar tu elección. Intenta de nuevo.");
+    } finally {
+      setGuardandoObjetivo(false);
+    }
+  }
+
   // Después de terminar la conversación: adjuntar archivos (sin analizarlos
-  // todavía) → revisar el resumen de las 3 fases → generar y guardar el
-  // perfil. null mientras se sigue hablando o en reposo.
-  const [pasoPostVoz, setPasoPostVoz] = useState<"archivos" | "resumen" | null>(null);
+  // todavía) → conectar fuentes externas → revisar el resumen de todo →
+  // generar y guardar el perfil. null mientras se sigue hablando o en reposo.
+  const [pasoPostVoz, setPasoPostVoz] = useState<"archivos" | "integraciones" | "resumen" | null>(null);
   const [archivos, setArchivos] = useState<ArchivoAdjunto[]>([]);
   const [subiendoArchivo, setSubiendoArchivo] = useState(false);
   const [errorArchivo, setErrorArchivo] = useState<string | null>(null);
   const [resumenFases, setResumenFases] = useState<ResumenFases | null>(null);
   const [generandoPerfil, setGenerandoPerfil] = useState(false);
   const [errorGenerar, setErrorGenerar] = useState<string | null>(null);
+
+  // Integraciones: simuladas (ver conectores/orquestador.ts) — avanzan solas
+  // por tiempo transcurrido, así que mientras haya alguna no-terminal se
+  // sigue consultando el estado.
+  const [conexiones, setConexiones] = useState<ConexionFuente[]>([]);
+  const [cargandoConexiones, setCargandoConexiones] = useState(false);
+  const [errorConexiones, setErrorConexiones] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (pasoPostVoz !== "integraciones") return;
+    let activo = true;
+    let temporizador: ReturnType<typeof setTimeout>;
+
+    async function consultar() {
+      try {
+        const res = await fetch("/api/perfil/conexiones/estado");
+        if (!res.ok) throw new Error();
+        const data: { conexiones: ConexionFuente[] } = await res.json();
+        if (!activo) return;
+        setConexiones(data.conexiones);
+        const hayActivas = data.conexiones.some((c) => !ESTADOS_TERMINALES_UI.includes(c.estado));
+        if (hayActivas) temporizador = setTimeout(consultar, 2500);
+      } catch {
+        if (activo) setErrorConexiones("No pudimos consultar tus conexiones.");
+      }
+    }
+
+    consultar();
+    return () => {
+      activo = false;
+      clearTimeout(temporizador);
+    };
+  }, [pasoPostVoz]);
+
+  async function conectarFuentes() {
+    setCargandoConexiones(true);
+    setErrorConexiones(null);
+    try {
+      const res = await fetch("/api/perfil/conexiones/iniciar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) throw new Error();
+      const data: { conexiones: ConexionFuente[] } = await res.json();
+      setConexiones(data.conexiones);
+    } catch {
+      setErrorConexiones("No pudimos iniciar la conexión con tus fuentes.");
+    } finally {
+      setCargandoConexiones(false);
+    }
+  }
+
+  async function reintentarFuente(id: string) {
+    try {
+      const res = await fetch(`/api/perfil/conexiones/${id}/reintentar`, { method: "POST" });
+      if (!res.ok) throw new Error();
+      const data: { conexion: ConexionFuente } = await res.json();
+      setConexiones((prev) => prev.map((c) => (c.id === data.conexion.id ? data.conexion : c)));
+    } catch {
+      setErrorConexiones("No pudimos reintentar esa fuente.");
+    }
+  }
 
   useEffect(() => {
     if (pasoPostVoz !== "resumen" || resumenFases) return;
@@ -257,12 +378,13 @@ function OnboardingInner() {
         dynamicVariables: {
           porcentaje_completado: inicial.porcentaje,
           campos_faltantes: inicial.camposFaltantes.join(", ") || "ninguno todavía",
+          objetivo_declarado: objetivo ?? "sin especificar",
         },
       });
     } catch {
       setError("No pudimos acceder al micrófono. Puedes escribir en su lugar.");
     }
-  }, [conversation, vozId]);
+  }, [conversation, vozId, objetivo]);
 
   const empezarConTexto = useCallback(async () => {
     if (!AGENT_ID) {
@@ -280,13 +402,14 @@ function OnboardingInner() {
         dynamicVariables: {
           porcentaje_completado: inicial.porcentaje,
           campos_faltantes: inicial.camposFaltantes.join(", ") || "ninguno todavía",
+          objetivo_declarado: objetivo ?? "sin especificar",
         },
       });
       setMostrarTexto(true);
     } catch {
       setError("No pudimos iniciar la conversación. Intenta de nuevo.");
     }
-  }, [conversation, vozId]);
+  }, [conversation, vozId, objetivo]);
 
   function enviarTexto(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -448,6 +571,54 @@ function OnboardingInner() {
     );
   }
 
+  // --- Selección del problema: qué quiere lograr con sus finanzas. Va entre
+  // datos personales y la conversación por voz.
+  if (faseContacto === "listo" && faseObjetivo === "cargando") {
+    return (
+      <div className="relative flex min-h-screen flex-1 items-center justify-center px-6 py-16 text-white">
+        <VideoBackdrop />
+      </div>
+    );
+  }
+
+  if (faseContacto === "listo" && faseObjetivo === "elegir") {
+    return (
+      <div className="relative flex min-h-screen flex-1 flex-col items-center justify-center gap-8 px-6 py-16 text-white">
+        <VideoBackdrop />
+        <BackHomeButton theme="dark" />
+        <AvatarUsuario theme="dark" flotante />
+
+        <div className="relative z-10 flex w-full max-w-sm flex-col items-center gap-6 rounded-3xl border border-white/15 bg-black/40 p-6 text-center backdrop-blur-xl">
+          <div>
+            <h1 className="headline-md">¿Qué quieres lograr con tus finanzas?</h1>
+            <p className="mt-2 body-md text-white/70">Esto nos ayuda a guiar la conversación.</p>
+          </div>
+
+          <div className="flex w-full flex-col gap-2">
+            {OBJETIVOS.map((op) => (
+              <button
+                key={op.id}
+                type="button"
+                onClick={() => elegirObjetivo(op.id)}
+                disabled={guardandoObjetivo}
+                className="w-full rounded-2xl border border-white/20 bg-black/30 p-4 text-left transition-colors hover:border-white/50 hover:bg-black/50 disabled:opacity-60"
+              >
+                <p className="body-md">{op.titulo}</p>
+                <p className="mt-1 text-sm text-white/60">{op.descripcion}</p>
+              </button>
+            ))}
+          </div>
+
+          {errorObjetivo && (
+            <p className="body-md text-error" role="alert">
+              {errorObjetivo}
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   // --- Archivos: cualquier formato, solo se adjuntan — a propósito no se
   // analizan todavía (eso pasa recién al generar el perfil, y ni siquiera
   // ahí: hoy no hay extractor real, ver conversación sobre integraciones).
@@ -487,8 +658,81 @@ function OnboardingInner() {
             </ul>
           )}
 
-          <Button type="button" onClick={() => setPasoPostVoz("resumen")} className="mt-2 w-full">
+          <Button type="button" onClick={() => setPasoPostVoz("integraciones")} className="mt-2 w-full">
             {archivos.length > 0 ? "Continuar" : "No tengo archivos — continuar"}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // --- Integraciones: fuentes externas simuladas (ver conectores/) + Gmail
+  // real. No bloquea el flujo — el usuario puede seguir sin conectar nada.
+  if (pasoPostVoz === "integraciones") {
+    const hayActivas = conexiones.some((c) => !ESTADOS_TERMINALES_UI.includes(c.estado));
+    return (
+      <div className="relative flex min-h-screen flex-1 flex-col items-center justify-center gap-8 px-6 py-16 text-white">
+        <VideoBackdrop />
+        <BackHomeButton theme="dark" />
+        <AvatarUsuario theme="dark" flotante />
+
+        <div className="relative z-10 flex w-full max-w-md flex-col items-center gap-6 rounded-3xl border border-white/15 bg-black/40 p-6 text-center backdrop-blur-xl">
+          <div>
+            <h1 className="headline-md">Conecta tus fuentes</h1>
+            <p className="mt-2 body-md text-white/70">
+              DataCrédito, DIAN, Colpensiones y más — mientras más conectes, más completo será tu perfil. Es
+              opcional.
+            </p>
+          </div>
+
+          {conexiones.length === 0 ? (
+            <Button type="button" onClick={conectarFuentes} disabled={cargandoConexiones} className="w-full">
+              {cargandoConexiones ? "Conectando…" : "Conectar mis fuentes"}
+            </Button>
+          ) : (
+            <ul className="flex w-full flex-col gap-2 text-left">
+              {conexiones.map((c) => (
+                <li
+                  key={c.id}
+                  className="flex items-center justify-between gap-3 rounded-xl bg-white/10 px-4 py-2.5"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm">{c.fuenteId}</p>
+                    {c.mensaje && <p className="truncate text-xs text-white/50">{c.mensaje}</p>}
+                  </div>
+                  {c.estado === "failed" || c.estado === "temporarily_unavailable" ? (
+                    <button
+                      type="button"
+                      onClick={() => reintentarFuente(c.id)}
+                      className="shrink-0 text-xs text-white/60 underline"
+                    >
+                      Reintentar
+                    </button>
+                  ) : (
+                    <span className="shrink-0 text-xs text-white/50">
+                      {ESTADOS_TERMINALES_UI.includes(c.estado) ? "Listo" : "En proceso…"}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {errorConexiones && (
+            <p className="body-md text-error" role="alert">
+              {errorConexiones}
+            </p>
+          )}
+
+          <ConectarGmailButton />
+
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => setPasoPostVoz("resumen")}
+            className="w-full"
+          >
+            {hayActivas ? "Continuar sin esperar" : "Continuar"}
           </Button>
         </div>
       </div>
@@ -574,10 +818,10 @@ function OnboardingInner() {
             </Button>
             <button
               type="button"
-              onClick={() => setPasoPostVoz("archivos")}
+              onClick={() => setPasoPostVoz("integraciones")}
               className="label-md text-white/50 underline"
             >
-              Volver a archivos
+              Volver a integraciones
             </button>
           </div>
         </div>
