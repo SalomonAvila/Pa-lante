@@ -194,6 +194,7 @@ function OnboardingInner() {
       <div className="relative flex min-h-screen flex-1 flex-col items-center justify-center gap-8 px-6 py-16 text-white">
         <VideoBackdrop />
         <BackHomeButton theme="dark" />
+        <AvatarUsuario theme="dark" flotante />
 
         <div className="relative z-10 flex w-full max-w-sm flex-col items-center gap-6 text-center">
           <div>
