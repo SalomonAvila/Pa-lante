@@ -6,7 +6,7 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
 
   const [perfiles, documentos, conversaciones] = await Promise.all([
-    supabase.from("perfiles_financieros_generados").select("id, version, datos, generado_en").eq("user_id", user.id).order("generado_en", { ascending: false }).limit(10),
+    supabase.from("perfiles_financieros_generados").select("id, version, datos, generado_en").eq("user_id", user.id).order("generado_en", { ascending: false }),
     supabase.from("documentos_financieros").select("id, storage_path, tipo, estado_extraccion, creado_en").eq("user_id", user.id).order("creado_en", { ascending: false }).limit(50),
     supabase.from("conversaciones").select("id, titulo, creado_en, actualizado_en").eq("user_id", user.id).order("actualizado_en", { ascending: false }).limit(20),
   ]);
@@ -15,7 +15,12 @@ export async function GET() {
 
   return NextResponse.json({
     perfil: perfiles.data?.find((fila) => fila.version === "1.1") ?? null,
-    sesionesPerfil: (perfiles.data ?? []).map(({ id, version, generado_en }) => ({ id, version, generadoEn: generado_en })),
+    sesionesPerfil: (perfiles.data ?? []).map(({ id, version, datos, generado_en }) => ({
+      id,
+      version,
+      generadoEn: generado_en,
+      perfil: datos,
+    })),
     documentos: (documentos.data ?? []).map((documento) => ({
       id: documento.id,
       nombre: documento.storage_path.split("/").pop() ?? documento.storage_path,
