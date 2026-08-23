@@ -17,9 +17,6 @@ import { registrarBuscarConocimiento } from "./tools/buscar-conocimiento.js";
 import { registrarSimularCreditoHipotecario } from "./tools/simular-credito-hipotecario.js";
 import { registrarAnalizarPortafolio } from "./tools/analizar-portafolio.js";
 import { registrarAnalizarAccion } from "./tools/analizar-accion.js";
-import { registrarObtenerPerfilFinanciero } from "./tools/obtener-perfil-financiero.js";
-import { registrarObtenerPerfil } from "./tools/obtener-perfil.js";
-import { registrarObtenerPruebaCapacidadPago } from "./tools/obtener-prueba-capacidad-pago.js";
 
 /**
  * Cada sesión se construye con el contexto del usuario ya resuelto desde el
@@ -57,9 +54,6 @@ function construirServidor(ctx: ContextoMcp): McpServer {
   registrarSimularCreditoHipotecario(server, ctx);
   registrarAnalizarPortafolio(server, ctx);
   registrarAnalizarAccion(server, ctx);
-  registrarObtenerPerfilFinanciero(server, ctx);
-  registrarObtenerPerfil(server, ctx);
-  registrarObtenerPruebaCapacidadPago(server, ctx);
   return server;
 }
 
