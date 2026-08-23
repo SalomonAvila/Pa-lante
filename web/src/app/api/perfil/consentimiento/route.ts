@@ -4,19 +4,12 @@ import {
   listarConsentimientosVigentes,
   registrarConsentimiento,
   revocarConsentimiento,
+  TIPOS_CONSENTIMIENTO,
   type TipoConsentimiento,
 } from "@/lib/perfil/consentimientos";
 
-const TIPOS_VALIDOS: TipoConsentimiento[] = [
-  "tratamiento_basico",
-  "perfil_financiero",
-  "conexion_externa",
-  "lectura_correo_otp",
-  "procesamiento_documentos",
-];
-
 function esTipoValido(valor: unknown): valor is TipoConsentimiento {
-  return typeof valor === "string" && TIPOS_VALIDOS.includes(valor as TipoConsentimiento);
+  return typeof valor === "string" && TIPOS_CONSENTIMIENTO.includes(valor as TipoConsentimiento);
 }
 
 export async function POST(request: Request) {
