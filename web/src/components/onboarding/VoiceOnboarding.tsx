@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ConversationProvider, useConversation, useConversationClientTool } from "@elevenlabs/react";
 import { VideoBackdrop } from "@/components/shared/VideoBackdrop";
 import { BackHomeButton } from "@/components/shared/BackHomeButton";
+import { CerrarSesionButton } from "@/components/auth/CerrarSesionButton";
 import { Button } from "@/components/ui/Button";
 import { ReactiveVoiceCircle } from "./ReactiveVoiceCircle";
 import type { Completitud } from "@/lib/perfil/completitud";
@@ -145,6 +146,7 @@ function OnboardingInner() {
     return (
       <div className="relative flex min-h-screen flex-1 flex-col items-center justify-center gap-10 bg-white px-6 py-16">
         <BackHomeButton theme="light" />
+        <CerrarSesionButton theme="light" />
         <ReactiveVoiceCircle conversation={conversation} theme="light" size="min(72vw, 62vh)" />
 
         <p className="text-sm font-medium text-black/50">
@@ -196,6 +198,7 @@ function OnboardingInner() {
     <div className="relative flex min-h-screen flex-1 flex-col items-center justify-center gap-8 px-6 py-16 text-white">
       <VideoBackdrop />
       <BackHomeButton theme="dark" />
+      <CerrarSesionButton theme="dark" />
 
       <div className="relative z-10 flex flex-col items-center gap-8">
         <ReactiveVoiceCircle conversation={conversation} theme="dark" />

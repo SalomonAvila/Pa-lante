@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { VideoBackdrop } from "@/components/shared/VideoBackdrop";
+import { createClient } from "@/lib/supabase/client";
 import { Logotipo } from "@/components/shared/Logotipo";
 import styles from "./landing.module.css";
 
@@ -112,6 +114,28 @@ export function LandingExperience() {
     };
   }, [menuAbierto]);
 
+  // Si ya hay sesión, el proxy manda "/login" → "/intake", así que ofrecer
+  // "Entrar" sería un callejón sin salida: la única forma de volver a ver el
+  // login es cerrar sesión desde acá.
+  const router = useRouter();
+  const [haySesion, setHaySesion] = useState(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => setHaySesion(Boolean(data.user)));
+    const { data: sub } = supabase.auth.onAuthStateChange((_evento, sesion) =>
+      setHaySesion(Boolean(sesion?.user)),
+    );
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  async function cerrarSesion() {
+    await createClient().auth.signOut();
+    setHaySesion(false);
+    setMenuAbierto(false);
+    router.refresh();
+  }
+
   return (
     <div className={styles.page}>
       <VideoBackdrop />
@@ -133,9 +157,15 @@ export function LandingExperience() {
           ))}
         </nav>
 
-        <Link href="/login" className={styles.entrarDesktop}>
-          Entrar
-        </Link>
+        {haySesion ? (
+          <button type="button" onClick={cerrarSesion} className={styles.entrarDesktop}>
+            Salir
+          </button>
+        ) : (
+          <Link href="/login" className={styles.entrarDesktop}>
+            Entrar
+          </Link>
+        )}
 
         <button
           type="button"
@@ -170,14 +200,25 @@ export function LandingExperience() {
               {item.etiqueta}
             </Link>
           ))}
-          <Link
-            href="/login"
-            className={styles.menuEntrar}
-            style={conRetraso("0.25s")}
-            onClick={() => setMenuAbierto(false)}
-          >
-            Entrar a Pa&apos;lante
-          </Link>
+          {haySesion ? (
+            <button
+              type="button"
+              className={styles.menuEntrar}
+              style={conRetraso("0.25s")}
+              onClick={cerrarSesion}
+            >
+              Cerrar sesión
+            </button>
+          ) : (
+            <Link
+              href="/login"
+              className={styles.menuEntrar}
+              style={conRetraso("0.25s")}
+              onClick={() => setMenuAbierto(false)}
+            >
+              Entrar a Pa&apos;lante
+            </Link>
+          )}
         </nav>
       </div>
 
