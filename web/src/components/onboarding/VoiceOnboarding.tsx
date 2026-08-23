@@ -271,7 +271,7 @@ function OnboardingInner() {
       )}
 
       {!conectado && (
-        <Link href="/intake" className="label-md text-on-surface-variant underline">
+        <Link href="/intake/clasico" className="label-md text-on-surface-variant underline">
           Prefiero conectar directo, sin conversación
         </Link>
       )}
