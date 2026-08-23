@@ -300,17 +300,16 @@ body {
   filter: blur(28px);
   opacity: var(--opacidad, 0.55);
   transform: scale(var(--escala, 0.85));
-  background: radial-gradient(circle at 50% 50%, hsl(var(--hue, 210) 90% 65% / 0.9), transparent 70%);
+  background: radial-gradient(circle at 50% 50%, hsl(var(--hue, 210) 90% 48% / 0.9), transparent 70%);
   transition: transform 0.08s linear, opacity 0.08s linear;
   mix-blend-mode: screen;
 }
 
-/* Sobre el video de fondo (pantalla de reposo): un borde negro le da al
-   círculo un límite definido para que no se disuelva contra un fondo que
-   puede ser claro u ocupado en cualquier punto del loop. */
+/* Sobre el video de fondo (pantalla de reposo): una sombra oscura difusa
+   detrás del círculo le da presencia sin un borde marcado — el color más
+   denso de arriba (48% lightness en vez de 65%) hace el resto. */
 .reactive-circle-wrap[data-theme="dark"] {
-  border-radius: 9999px;
-  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.9);
+  filter: drop-shadow(0 0 36px rgba(0, 0, 0, 0.4));
 }
 
 .reactive-circle-core {
