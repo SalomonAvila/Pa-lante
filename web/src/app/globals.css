@@ -289,6 +289,39 @@ body {
   }
 }
 
+/* Círculo de voz reactivo (ReactiveVoiceCircle): capas de gradiente radial
+   con mix-blend-mode:screen para que el color se sume sobre el fondo oscuro
+   de video, igual que un orbe de voz — --escala/--opacidad/--hue los mueve
+   JS cuadro a cuadro según el audio real, acá solo se definen los defaults. */
+.reactive-circle-layer {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  filter: blur(28px);
+  opacity: var(--opacidad, 0.4);
+  transform: scale(var(--escala, 0.8));
+  background: radial-gradient(circle at 50% 50%, hsl(var(--hue, 210) 90% 65% / 0.9), transparent 70%);
+  transition: transform 0.08s linear, opacity 0.08s linear;
+  mix-blend-mode: screen;
+}
+
+.reactive-circle-core {
+  position: relative;
+  z-index: 1;
+  width: 55%;
+  height: 55%;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.15) 60%, transparent 75%);
+  box-shadow: 0 0 40px rgba(255, 255, 255, 0.25);
+  animation: mascot-breathe 3s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reactive-circle-core {
+    animation: none !important;
+  }
+}
+
 /* ---------------------------------------------------------------------------
    Ambiente de la landing
    Capas de luz que derivan lentamente sobre el crema. Sin video: nada que

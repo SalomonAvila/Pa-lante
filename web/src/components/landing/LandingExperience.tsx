@@ -3,16 +3,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { VideoBackdrop } from "@/components/shared/VideoBackdrop";
 import styles from "./landing.module.css";
-
-const VIDEO_URL =
-  "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260809_012548_ef22562c-c0ae-4816-ad9d-f8922af4e6a7.mp4";
 
 const NAVEGACION = [
   { etiqueta: "Inicio", href: "/" },
-  { etiqueta: "Producto", href: "/login" },
+  { etiqueta: "Producto", href: "/intake" },
   { etiqueta: "API", href: "/api/v1" },
-  { etiqueta: "Seguridad", href: "/configuracion/privacidad" },
 ];
 
 const METRICAS = [
@@ -117,11 +114,7 @@ export function LandingExperience() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.bg} aria-hidden="true">
-        <video className={styles.bgVideo} autoPlay muted loop playsInline>
-          <source src={VIDEO_URL} type="video/mp4" />
-        </video>
-      </div>
+      <VideoBackdrop />
 
       <header className={styles.header}>
         <Link href="/" className={styles.logo} aria-label="Pa'lante, inicio">
@@ -146,7 +139,7 @@ export function LandingExperience() {
           ))}
         </nav>
 
-        <Link href="/login" className={styles.entrarDesktop}>
+        <Link href="/intake" className={styles.entrarDesktop}>
           Entrar
         </Link>
 
@@ -184,7 +177,7 @@ export function LandingExperience() {
             </Link>
           ))}
           <Link
-            href="/login"
+            href="/intake"
             className={styles.menuEntrar}
             style={conRetraso("0.25s")}
             onClick={() => setMenuAbierto(false)}
@@ -219,7 +212,7 @@ export function LandingExperience() {
         </p>
 
         <Link
-          href="/login"
+          href="/intake"
           className={`${styles.cta} ${styles.pulso}`}
           style={conRetraso("0.4s")}
         >
