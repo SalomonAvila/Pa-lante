@@ -298,11 +298,19 @@ body {
   inset: 0;
   border-radius: 9999px;
   filter: blur(28px);
-  opacity: var(--opacidad, 0.4);
-  transform: scale(var(--escala, 0.8));
+  opacity: var(--opacidad, 0.55);
+  transform: scale(var(--escala, 0.85));
   background: radial-gradient(circle at 50% 50%, hsl(var(--hue, 210) 90% 65% / 0.9), transparent 70%);
   transition: transform 0.08s linear, opacity 0.08s linear;
   mix-blend-mode: screen;
+}
+
+/* Sobre el video de fondo (pantalla de reposo): un borde negro le da al
+   círculo un límite definido para que no se disuelva contra un fondo que
+   puede ser claro u ocupado en cualquier punto del loop. */
+.reactive-circle-wrap[data-theme="dark"] {
+  border-radius: 9999px;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.9);
 }
 
 .reactive-circle-core {
