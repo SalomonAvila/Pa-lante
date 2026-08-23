@@ -1,0 +1,262 @@
+/* Login — mismo lenguaje que la landing: negro puro, píldoras, tipografía
+   pixel para el titular y el botón blanco con halo. Los tokens se repiten
+   aquí en vez de importarse porque landing.module.css los define dentro de
+   .page, que es local al módulo. */
+@font-face {
+  font-family: "Geist Pixel Circle";
+  src: url("/fonts/GeistPixel-Circle.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+.page {
+  --bg: #000000;
+  --text: #ffffff;
+  --muted: #8e8e8e;
+  --pill-dark: #28282a;
+  --pill-text: #c8c8c8;
+  --linea: rgba(255, 255, 255, 0.14);
+  --font-sans: var(--font-inter), "Inter", "Segoe UI", system-ui, sans-serif;
+  --font-display: "BubbledotICG-FinePos", "Geist Pixel Circle", monospace;
+
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  flex-direction: column;
+  align-items: center;
+  background: var(--bg);
+  padding: clamp(16px, 2.4vh, 28px) clamp(14px, 3vw, 32px);
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Halo tenue detrás del formulario: ancla la composición sin competir con
+   el botón, que es lo único que debe brillar de verdad. */
+.page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: radial-gradient(
+    58% 44% at 50% 38%,
+    rgba(255, 255, 255, 0.07) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+.header {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  animation: slideDown 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.logo {
+  display: grid;
+  width: clamp(40px, 4.4vw, 46px);
+  height: clamp(40px, 4.4vw, 46px);
+  place-items: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
+  transition: transform 0.3s ease;
+}
+
+.logo:hover { transform: scale(1.04); }
+.logo img { width: 72%; height: 72%; object-fit: contain; }
+
+.main {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  width: min(420px, 100%);
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(18px, 2.6vh, 26px);
+  text-align: center;
+}
+
+.titulo {
+  margin: 0;
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: clamp(34px, 8vw, 58px);
+  font-weight: 400;
+  letter-spacing: -0.04em;
+  line-height: 1.08;
+  opacity: 0;
+  transform: translateY(14px);
+  animation: subir 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.1s forwards;
+}
+
+.subtitulo {
+  margin: 0;
+  width: min(340px, 92%);
+  color: #d0d0d0;
+  font-size: 15px;
+  line-height: 1.55;
+  opacity: 0;
+  transform: translateY(14px);
+  animation: subir 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.24s forwards;
+}
+
+.acciones {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 14px;
+  opacity: 0;
+  transform: translateY(14px);
+  animation: subir 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.38s forwards;
+}
+
+/* Botón principal: blanco con halo, igual que el CTA de la landing. */
+.google {
+  display: inline-flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: none;
+  border-radius: 999px;
+  background: #fff;
+  padding: 14px 24px;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.15),
+    0 0 22px rgba(255, 255, 255, 0.32),
+    0 0 44px rgba(255, 255, 255, 0.12);
+  color: #000;
+  font-family: inherit;
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.google:hover:not(:disabled) {
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.35),
+    0 0 28px rgba(255, 255, 255, 0.48),
+    0 0 54px rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px) scale(1.02);
+}
+
+.google:disabled { opacity: 0.55; cursor: progress; }
+.google svg { width: 17px; height: 17px; }
+
+.separador {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.separador::before,
+.separador::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--linea);
+}
+
+.form { display: flex; flex-direction: column; gap: 10px; }
+
+.campo {
+  width: 100%;
+  border: 1px solid var(--linea);
+  border-radius: 999px;
+  background: var(--pill-dark);
+  padding: 13px 20px;
+  color: #fff;
+  font-family: inherit;
+  font-size: 14.5px;
+  text-align: center;
+  transition: border-color 0.25s ease, background 0.25s ease;
+}
+
+.campo::placeholder { color: #7d7d7d; }
+.campo:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.45);
+  background: #323234;
+}
+
+.enviar {
+  border: 1px solid var(--linea);
+  border-radius: 999px;
+  background: transparent;
+  padding: 13px 24px;
+  color: var(--pill-text);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.25s ease, background 0.25s ease, transform 0.25s ease;
+}
+
+.enviar:hover:not(:disabled) {
+  background: var(--pill-dark);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.enviar:disabled { opacity: 0.55; cursor: progress; }
+
+.aviso { margin: 0; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+.error { margin: 0; color: #ff8f7a; font-size: 13px; line-height: 1.5; }
+
+.enviado {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: subir 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.enviado strong { color: #fff; font-weight: 600; }
+
+.volver {
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 13px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.volver:hover { color: #fff; }
+
+:where(.google, .enviar, .campo, .volver):focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes subir {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .titulo, .subtitulo, .acciones, .header, .enviado {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+}

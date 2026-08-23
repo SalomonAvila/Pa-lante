@@ -139,7 +139,7 @@ export function LandingExperience() {
           ))}
         </nav>
 
-        <Link href="/intake" className={styles.entrarDesktop}>
+        <Link href="/login" className={styles.entrarDesktop}>
           Entrar
         </Link>
 
@@ -177,7 +177,7 @@ export function LandingExperience() {
             </Link>
           ))}
           <Link
-            href="/intake"
+            href="/login"
             className={styles.menuEntrar}
             style={conRetraso("0.25s")}
             onClick={() => setMenuAbierto(false)}
