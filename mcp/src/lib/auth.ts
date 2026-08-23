@@ -34,6 +34,7 @@ export type ContextoMcp = {
   tokenId: string | null;
   /** true cuando corre sin base de datos, contra el fixture de demo. */
   demo: boolean;
+  scopes: string[];
 };
 
 /**
@@ -51,7 +52,7 @@ export async function autenticar(
 
   const demoToken = process.env.MCP_DEMO_TOKEN;
   if (demoToken && token === demoToken) {
-    return { userId: "demo", tokenId: null, demo: true };
+    return { userId: "demo", tokenId: null, demo: true, scopes: ["perfil:leer", "hallazgos:leer", "cobertura:leer", "prueba:generar", "exportar"] };
   }
 
   const supabase = clienteServicio();
@@ -59,19 +60,20 @@ export async function autenticar(
 
   const { data, error } = await supabase
     .from("mcp_tokens")
-    .select("id, user_id, revocado_en")
+    .select("id, user_id, scopes, expira_en, revocado_en")
     .eq("token_hash", hashTokenMcp(token))
     .is("revocado_en", null)
     .maybeSingle();
 
   if (error || !data) return null;
+  if (data.expira_en && new Date(data.expira_en) < new Date()) return null;
 
   await supabase
     .from("mcp_tokens")
     .update({ ultimo_uso: new Date().toISOString() })
     .eq("id", data.id);
 
-  return { userId: data.user_id, tokenId: data.id, demo: false };
+  return { userId: data.user_id, tokenId: data.id, demo: false, scopes: (data.scopes as string[] | null) ?? [] };
 }
 
 /** Deja rastro de cada lectura para que el usuario sepa quién leyó qué. */

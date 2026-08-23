@@ -36,24 +36,28 @@ function construirServidor(ctx: ContextoMcp): McpServer {
     },
   );
 
-  registrarExplicarDiagnostico(server, ctx);
+  const scope = (valor: string) => ctx.scopes.includes(valor) || ctx.scopes.includes("perfil:leer");
+  const algunPerfil = ctx.scopes.some((valor) => valor.startsWith("perfil:"));
+  if (scope("perfil:resumen")) registrarExplicarDiagnostico(server, ctx);
   // Crudo: lo que el usuario declaró o conectó, hallazgo por hallazgo.
-  registrarObtenerPerfil(server, ctx);
+  if (ctx.scopes.includes("hallazgos:leer")) registrarObtenerPerfil(server, ctx);
   // Agregado: el contrato canónico con procedencia y confianza por cifra.
-  registrarObtenerPerfilFinanciero(server, ctx);
+  if (algunPerfil) registrarObtenerPerfilFinanciero(server, ctx);
   // Derivado: vista mínima para un tercero.
-  registrarObtenerPruebaCapacidadPago(server, ctx);
-  registrarObtenerContextoFinanciero(server, ctx);
-  registrarObtenerPerfilCredito(server, ctx);
-  registrarObtenerPerfilTributario(server, ctx);
-  registrarBuscarTransacciones(server, ctx);
-  registrarObtenerPlan(server, ctx);
-  registrarCalcularRiesgo(server, ctx);
-  registrarProyectarFlujoCaja(server, ctx);
+  if (ctx.scopes.includes("prueba:generar")) registrarObtenerPruebaCapacidadPago(server, ctx);
+  if (ctx.scopes.includes("perfil:leer")) {
+    registrarObtenerContextoFinanciero(server, ctx);
+    registrarObtenerPerfilCredito(server, ctx);
+    registrarObtenerPerfilTributario(server, ctx);
+    registrarObtenerPlan(server, ctx);
+    registrarCalcularRiesgo(server, ctx);
+    registrarProyectarFlujoCaja(server, ctx);
+    registrarSimularCreditoHipotecario(server, ctx);
+    registrarAnalizarPortafolio(server, ctx);
+    registrarAnalizarAccion(server, ctx);
+  }
+  if (ctx.scopes.includes("hallazgos:leer")) registrarBuscarTransacciones(server, ctx);
   registrarBuscarConocimiento(server, ctx);
-  registrarSimularCreditoHipotecario(server, ctx);
-  registrarAnalizarPortafolio(server, ctx);
-  registrarAnalizarAccion(server, ctx);
   return server;
 }
 

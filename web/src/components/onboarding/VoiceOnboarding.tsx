@@ -267,14 +267,7 @@ function OnboardingInner({ problemaInicial }: { problemaInicial?: ProblemaSelecc
   async function confirmarYGenerarPerfil() {
     setGenerandoPerfil(true);
     setErrorGenerar(null);
-    try {
-      const res = await fetch("/api/perfil/generar", { method: "POST" });
-      if (!res.ok) throw new Error();
-      router.push("/intake/progreso");
-    } catch {
-      setErrorGenerar("No pudimos generar tu perfil. Intenta de nuevo.");
-      setGenerandoPerfil(false);
-    }
+    router.push("/intake/progreso");
   }
 
   const conversation = useConversation({

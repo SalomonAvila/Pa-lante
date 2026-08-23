@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { generarTokenMcp } from "@/lib/mcp/tokens";
 import { clienteAutenticado } from "@/lib/supabase/route-auth";
+import { esScopeValido, SCOPES_POR_DEFECTO } from "@/lib/api/scopes";
 
 export async function GET() {
   const { supabase, user } = await clienteAutenticado();
@@ -9,7 +10,7 @@ export async function GET() {
   const [tokensResult, accesosResult] = await Promise.all([
     supabase
       .from("mcp_tokens")
-      .select("id, nombre, prefijo, ultimo_uso, revocado_en, creado_en")
+      .select("id, nombre, prefijo, scopes, expira_en, ultimo_uso, revocado_en, creado_en")
       .eq("user_id", user.id)
       .order("creado_en", { ascending: false }),
     supabase
@@ -39,6 +40,11 @@ export async function POST(request: Request) {
   if (nombre.length < 2 || nombre.length > 60) {
     return NextResponse.json({ error: "El nombre debe tener entre 2 y 60 caracteres" }, { status: 400 });
   }
+  const solicitados: string[] = Array.isArray(body?.scopes) ? body.scopes.filter((scope: unknown): scope is string => typeof scope === "string") : SCOPES_POR_DEFECTO;
+  const scopes = [...new Set(solicitados)];
+  if (!scopes.length || !scopes.every(esScopeValido)) {
+    return NextResponse.json({ error: "Selecciona al menos un scope válido" }, { status: 400 });
+  }
 
   const generado = generarTokenMcp();
   const { data, error } = await supabase
@@ -48,8 +54,9 @@ export async function POST(request: Request) {
       nombre,
       token_hash: generado.tokenHash,
       prefijo: generado.prefijo,
+      scopes,
     })
-    .select("id, nombre, prefijo, ultimo_uso, revocado_en, creado_en")
+    .select("id, nombre, prefijo, scopes, expira_en, ultimo_uso, revocado_en, creado_en")
     .single();
 
   if (error) {

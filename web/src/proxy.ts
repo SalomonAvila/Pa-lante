@@ -13,6 +13,7 @@ const RUTAS_PROTEGIDAS = [
   "/configuracion",
   "/asistente",
   "/intake",
+  "/portal",
 ];
 
 export default async function proxy(request: NextRequest) {
@@ -72,5 +73,6 @@ export const config = {
     "/configuracion/:path*",
     "/asistente/:path*",
     "/intake/:path*",
+    "/portal/:path*",
   ],
 };
