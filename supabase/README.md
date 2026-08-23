@@ -1,7 +1,7 @@
 # Base de datos
 
 El servidor MCP que consume estas tablas vive en `mcp/` (paquete aparte, ver
-`CLAUDE.MD` → Estructura de carpetas).
+`CLAUDE.md` → Estructura de carpetas).
 
 ## Estructura
 

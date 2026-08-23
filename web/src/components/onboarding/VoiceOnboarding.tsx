@@ -24,7 +24,7 @@ const UMBRAL_COMPLETITUD = 80;
 const VOCES = [
   { id: "wKvrrFnAmhvpNRpZkbmh", nombre: "Diana", descripcion: "Colombiana, cálida" },
   { id: "xzUwWse1B1nyc4pXhaLG", nombre: "Andrés", descripcion: "Argentino, calmado" },
-  { id: "DZWBGWAunK78dZTFw1Ag", nombre: "Valeria", descripcion: "Latina, segura" },
+  { id: "RjnDg9S3IUlYzp0QIp3R", nombre: "Johana", descripcion: "Latina, calmada" },
   { id: "zsjfif2v09thEBtkBYFe", nombre: "Yeiden", descripcion: "Latino, cálido" },
 ] as const;
 
