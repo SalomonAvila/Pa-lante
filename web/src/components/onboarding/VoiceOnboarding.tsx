@@ -359,12 +359,14 @@ function OnboardingInner({ problemaInicial }: { problemaInicial?: ProblemaSelecc
         dynamicVariables: {
           porcentaje_completado: inicial.porcentaje,
           campos_faltantes: inicial.camposFaltantes.join(", ") || "ninguno todavía",
+          problema_titulo: problemaInicial?.titulo ?? "organizar tus finanzas",
+          problema_descripcion: problemaInicial?.descripcion ?? "sin descripción adicional",
         },
       });
     } catch {
       setError("No pudimos acceder al micrófono. Puedes escribir en su lugar.");
     }
-  }, [conversation, prepararContexto, vozId]);
+  }, [conversation, prepararContexto, vozId, problemaInicial]);
 
   const empezarConTexto = useCallback(async () => {
     if (!AGENT_ID) {
@@ -383,13 +385,15 @@ function OnboardingInner({ problemaInicial }: { problemaInicial?: ProblemaSelecc
         dynamicVariables: {
           porcentaje_completado: inicial.porcentaje,
           campos_faltantes: inicial.camposFaltantes.join(", ") || "ninguno todavía",
+          problema_titulo: problemaInicial?.titulo ?? "organizar tus finanzas",
+          problema_descripcion: problemaInicial?.descripcion ?? "sin descripción adicional",
         },
       });
       setMostrarTexto(true);
     } catch {
       setError("No pudimos iniciar la conversación. Intenta de nuevo.");
     }
-  }, [conversation, prepararContexto, vozId]);
+  }, [conversation, prepararContexto, vozId, problemaInicial]);
 
   function enviarTexto(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
