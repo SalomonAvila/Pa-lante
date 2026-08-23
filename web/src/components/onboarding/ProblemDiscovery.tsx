@@ -5,7 +5,7 @@ import { AvatarUsuario } from "@/components/auth/AvatarUsuario";
 import { BackHomeButton } from "@/components/shared/BackHomeButton";
 import { VideoBackdrop } from "@/components/shared/VideoBackdrop";
 import { DebtIcon, GrowthIcon, VisibilityIcon } from "@/components/shared/icons";
-import { VoiceOnboarding } from "@/components/onboarding/VoiceOnboarding";
+import { VoiceOnboarding, CLAVE_PASO_POST_VOZ } from "@/components/onboarding/VoiceOnboarding";
 import {
   PROBLEMAS_FINANCIEROS,
   type ProblemaFinanciero,
@@ -66,7 +66,13 @@ export function ProblemDiscovery() {
     fetch("/api/perfil/problema")
       .then(async (respuesta) => (respuesta.ok ? respuesta.json() : null))
       .then((datos) => {
-        if (activo && datos?.problema) setSeleccionado(datos.problema as ProblemaSeleccionado);
+        if (!activo || !datos?.problema) return;
+        setSeleccionado(datos.problema as ProblemaSeleccionado);
+        // Si venimos de un redirect completo (ej. OAuth de Gmail desde
+        // integraciones) con progreso ya guardado, entra directo a la
+        // conversación en vez de pedir otro clic — el problema ya estaba
+        // elegido antes de irse.
+        if (sessionStorage.getItem(CLAVE_PASO_POST_VOZ)) setConversando(true);
       })
       .catch(() => undefined);
     return () => {

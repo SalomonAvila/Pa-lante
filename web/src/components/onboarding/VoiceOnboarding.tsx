@@ -13,6 +13,15 @@ import type { ProblemaSeleccionado } from "@/lib/problemas/catalogo";
 import type { TipoHallazgo } from "@/types/finance";
 import type { ConexionFuente } from "@/lib/conectores/tipos";
 import { ConectarGmailButton } from "@/components/auth/ConectarGmailButton";
+import { formatearCOP } from "@/lib/diagnostico/reglas";
+
+/**
+ * Conectar Gmail desde integraciones puede exigir un OAuth completo (navega
+ * fuera de la página) si el usuario no tenía ya el scope de Gmail — sin
+ * esto, volver a /intake/problema reiniciaba la conversación, los archivos
+ * y las integraciones ya avanzadas, porque ese estado solo vivía en memoria.
+ */
+export const CLAVE_PASO_POST_VOZ = "palante:intake:pasoPostVoz";
 
 const AGENT_ID = process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID;
 
@@ -62,6 +71,42 @@ type HallazgoResumen = {
 type DocumentoResumen = { id: string; nombre: string; estado: string; creadoEn: string };
 
 const ESTADOS_TERMINALES_UI = ["completed", "completed_no_data", "failed", "temporarily_unavailable"];
+
+const ETIQUETAS_TIPO_HALLAZGO: Record<string, string> = {
+  income: "Ingreso",
+  liability: "Deuda",
+  asset: "Activo",
+  property: "Propiedad",
+  vehicle: "Vehículo",
+  credit_report: "Reporte de crédito",
+  pension: "Pensión",
+  tax_profile: "Perfil tributario",
+  company: "Empresa",
+  fine: "Multa",
+  account: "Cuenta",
+};
+
+/** Convierte un hallazgo crudo en una línea legible: qué es, de quién/qué, y el monto — no solo el tipo. */
+function resumirHallazgo(h: HallazgoResumen): string {
+  const etiqueta = ETIQUETAS_TIPO_HALLAZGO[h.tipo] ?? h.tipo.replace(/_/g, " ");
+  const d = h.datos ?? {};
+  const partes: string[] = [];
+
+  const nombre = [d.entidad, d.nombre, d.tipo_detalle].find((v) => typeof v === "string") as string | undefined;
+  if (nombre) partes.push(nombre);
+
+  const monto = [d.valor_mensual, d.saldo, d.valor, d.valor_anual].find((v) => typeof v === "number") as
+    | number
+    | undefined;
+  if (monto !== undefined) partes.push(formatearCOP(monto));
+
+  if (typeof d.tasa === "number") partes.push(`${d.tasa}% E.A.`);
+  if (typeof d.cuota === "number" && d.cuota !== monto) partes.push(`cuota ${formatearCOP(d.cuota)}`);
+  if (typeof d.descripcion === "string" && partes.length === 0) partes.push(d.descripcion);
+
+  const base = partes.length > 0 ? `${etiqueta} — ${partes.join(" · ")}` : etiqueta;
+  return h.periodo ? `${base} (${h.periodo})` : base;
+}
 
 type ResumenFases = {
   contacto: ContactoBasico | null;
@@ -161,7 +206,14 @@ function OnboardingInner({ problemaInicial }: { problemaInicial?: ProblemaSelecc
   // Después de terminar la conversación: adjuntar archivos (sin analizarlos
   // todavía) → conectar fuentes externas → revisar el resumen de todo →
   // generar y guardar el perfil. null mientras se sigue hablando o en reposo.
-  const [pasoPostVoz, setPasoPostVoz] = useState<"archivos" | "integraciones" | "resumen" | null>(null);
+  // Se restaura de sessionStorage si venimos de un redirect completo (ej.
+  // OAuth de Gmail desde integraciones) — solo tiene sentido cuando ya se
+  // seleccionó el problema, que es justo cuando este componente monta con eso.
+  const [pasoPostVoz, setPasoPostVoz] = useState<"archivos" | "integraciones" | "resumen" | null>(() => {
+    if (!problemaInicial || typeof window === "undefined") return null;
+    const guardado = sessionStorage.getItem(CLAVE_PASO_POST_VOZ);
+    return guardado === "archivos" || guardado === "integraciones" || guardado === "resumen" ? guardado : null;
+  });
   const [archivos, setArchivos] = useState<ArchivoAdjunto[]>([]);
   const [subiendoArchivo, setSubiendoArchivo] = useState(false);
   const [errorArchivo, setErrorArchivo] = useState<string | null>(null);
@@ -175,6 +227,26 @@ function OnboardingInner({ problemaInicial }: { problemaInicial?: ProblemaSelecc
   const [conexiones, setConexiones] = useState<ConexionFuente[]>([]);
   const [cargandoConexiones, setCargandoConexiones] = useState(false);
   const [errorConexiones, setErrorConexiones] = useState<string | null>(null);
+
+  // Si el paso se restauró desde sessionStorage, repuebla la lista de
+  // archivos ya subidos (el resto del estado de esa fase no hace falta:
+  // "integraciones" y "resumen" vuelven a pedir sus propios datos al servidor).
+  useEffect(() => {
+    if (!sessionStorage.getItem(CLAVE_PASO_POST_VOZ)) return;
+    fetch("/api/perfil/documentos/adjuntar")
+      .then((res) => (res.ok ? res.json() : { documentos: [] }))
+      .then((data: { documentos: { id: string; nombre: string }[] }) => {
+        setArchivos(data.documentos.map((d) => ({ id: d.id, nombre: d.nombre })));
+      })
+      .catch(() => undefined);
+  }, []);
+
+  // Cualquier avance real (terminar de hablar, pasar a integraciones o
+  // resumen) se persiste — así un redirect completo (OAuth) no lo pierde.
+  useEffect(() => {
+    if (!pasoPostVoz) return;
+    sessionStorage.setItem(CLAVE_PASO_POST_VOZ, pasoPostVoz);
+  }, [pasoPostVoz]);
 
   useEffect(() => {
     if (pasoPostVoz !== "integraciones") return;
@@ -267,6 +339,7 @@ function OnboardingInner({ problemaInicial }: { problemaInicial?: ProblemaSelecc
   async function confirmarYGenerarPerfil() {
     setGenerandoPerfil(true);
     setErrorGenerar(null);
+    sessionStorage.removeItem(CLAVE_PASO_POST_VOZ);
     router.push("/intake/progreso");
   }
 
@@ -713,10 +786,10 @@ function OnboardingInner({ problemaInicial }: { problemaInicial?: ProblemaSelecc
                   Lo que contaste por voz ({resumenFases.completitud.porcentaje}% de tu perfil)
                 </p>
                 {resumenFases.hallazgosPorVoz.length > 0 ? (
-                  <ul className="mt-1 flex flex-col gap-1">
+                  <ul className="mt-2 flex flex-col gap-1.5">
                     {resumenFases.hallazgosPorVoz.map((h) => (
-                      <li key={h.id} className="text-sm text-white/70">
-                        <span className="capitalize">{h.tipo.replace(/_/g, " ")}</span>
+                      <li key={h.id} className="text-sm text-white/80">
+                        {resumirHallazgo(h)}
                       </li>
                     ))}
                   </ul>
