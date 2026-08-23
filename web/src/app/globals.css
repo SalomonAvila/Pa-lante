@@ -316,6 +316,19 @@ body {
   animation: mascot-breathe 3s ease-in-out infinite;
 }
 
+/* Sobre fondo blanco (pantalla de grabación): screen se lava a blanco, así
+   que las capas pasan a multiply (el color se combina de verdad contra un
+   fondo claro) y el núcleo deja de ser un brillo blanco — ya está el fondo. */
+.reactive-circle-wrap[data-theme="light"] .reactive-circle-layer {
+  mix-blend-mode: multiply;
+  filter: blur(46px);
+}
+
+.reactive-circle-wrap[data-theme="light"] .reactive-circle-core {
+  background: radial-gradient(circle at 35% 30%, rgba(0, 0, 0, 0.05), transparent 70%);
+  box-shadow: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .reactive-circle-core {
     animation: none !important;

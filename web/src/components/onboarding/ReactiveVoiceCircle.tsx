@@ -7,7 +7,10 @@ type Conversacion = ReturnType<typeof useConversation>;
 
 type Props = {
   conversation: Conversacion;
-  size?: number;
+  size?: number | string;
+  /** "dark" = pensado para el fondo de video (screen blend, núcleo blanco).
+   *  "light" = para fondo blanco (multiply blend, sin núcleo artificial). */
+  theme?: "dark" | "light";
 };
 
 type EstiloConHue = CSSProperties & { "--hue": number };
@@ -20,7 +23,7 @@ type EstiloConHue = CSSProperties & { "--hue": number };
  * mutando estilos por ref (no por estado de React, para no re-renderizar
  * 60 veces por segundo). Sigue siendo CSS puro, sin canvas ni WebGL.
  */
-export function ReactiveVoiceCircle({ conversation, size = 220 }: Props) {
+export function ReactiveVoiceCircle({ conversation, size = 220, theme = "dark" }: Props) {
   const capaBajaRef = useRef<HTMLDivElement>(null);
   const capaMediaRef = useRef<HTMLDivElement>(null);
   const capaAltaRef = useRef<HTMLDivElement>(null);
@@ -70,7 +73,12 @@ export function ReactiveVoiceCircle({ conversation, size = 220 }: Props) {
   }, [conversation]);
 
   return (
-    <div className="relative flex items-center justify-center" style={{ width: size, height: size }} aria-hidden="true">
+    <div
+      className="reactive-circle-wrap relative flex items-center justify-center"
+      data-theme={theme}
+      style={{ width: size, height: size }}
+      aria-hidden="true"
+    >
       <div ref={capaBajaRef} className="reactive-circle-layer" style={{ "--hue": 210 } as EstiloConHue} />
       <div ref={capaMediaRef} className="reactive-circle-layer" style={{ "--hue": 300 } as EstiloConHue} />
       <div ref={capaAltaRef} className="reactive-circle-layer" style={{ "--hue": 20 } as EstiloConHue} />
