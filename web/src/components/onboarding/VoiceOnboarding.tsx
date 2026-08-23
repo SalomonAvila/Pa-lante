@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ConversationProvider, useConversation, useConversationClientTool } from "@elevenlabs/react";
 import { VideoBackdrop } from "@/components/shared/VideoBackdrop";
@@ -40,6 +40,42 @@ function OnboardingInner() {
   const [error, setError] = useState<string | null>(null);
   const [completitud, setCompletitud] = useState<Completitud | null>(null);
   const [vozId, setVozId] = useState<string>(VOCES[0].id);
+
+  // /intake ya requiere sesión (proxy.ts) — esto es lo mínimo para poder
+  // contactar al usuario e identificarlo en integraciones más adelante
+  // (DIAN, DataCrédito), no el KYC completo. null = todavía no se sabe.
+  const [contactoListo, setContactoListo] = useState<boolean | null>(null);
+  const [nombreContacto, setNombreContacto] = useState("");
+  const [celularContacto, setCelularContacto] = useState("");
+  const [guardandoContacto, setGuardandoContacto] = useState(false);
+  const [errorContacto, setErrorContacto] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/perfil/contacto")
+      .then((res) => (res.ok ? res.json() : { contacto: null }))
+      .then((data) => setContactoListo(Boolean(data.contacto)))
+      .catch(() => setContactoListo(false));
+  }, []);
+
+  async function guardarContacto(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!nombreContacto.trim() || !celularContacto.trim()) return;
+    setGuardandoContacto(true);
+    setErrorContacto(null);
+    try {
+      const res = await fetch("/api/perfil/contacto", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre: nombreContacto.trim(), celular: celularContacto.trim() }),
+      });
+      if (!res.ok) throw new Error("No se pudo guardar");
+      setContactoListo(true);
+    } catch {
+      setErrorContacto("No pudimos guardar tus datos. Intenta de nuevo.");
+    } finally {
+      setGuardandoContacto(false);
+    }
+  }
 
   const conversation = useConversation({
     onError: (message) => setError(message),
@@ -139,6 +175,62 @@ function OnboardingInner() {
   }
 
   const suficiente = (completitud?.porcentaje ?? 0) >= UMBRAL_COMPLETITUD;
+
+  // --- Cargando: todavía no sabemos si ya dio sus datos de contacto.
+  if (contactoListo === null) {
+    return (
+      <div className="relative flex min-h-screen flex-1 items-center justify-center px-6 py-16 text-white">
+        <VideoBackdrop />
+      </div>
+    );
+  }
+
+  // --- Datos de contacto: lo mínimo para identificar/contactar al usuario,
+  // no el KYC completo — eso se pide más adelante cuando haga falta para
+  // una integración concreta.
+  if (!contactoListo) {
+    return (
+      <div className="relative flex min-h-screen flex-1 flex-col items-center justify-center gap-8 px-6 py-16 text-white">
+        <VideoBackdrop />
+        <BackHomeButton theme="dark" />
+
+        <div className="relative z-10 flex w-full max-w-sm flex-col items-center gap-6 text-center">
+          <div>
+            <h1 className="headline-md">Antes de empezar</h1>
+            <p className="mt-2 body-md text-white/70">
+              Solo lo básico para poder contactarte y, más adelante, conectar tus fuentes.
+            </p>
+          </div>
+
+          <form onSubmit={guardarContacto} className="flex w-full flex-col gap-3">
+            <input
+              value={nombreContacto}
+              onChange={(e) => setNombreContacto(e.target.value)}
+              placeholder="Tu nombre"
+              required
+              className="w-full rounded-full border border-white/20 bg-black/40 px-4 py-2.5 body-md text-white outline-none backdrop-blur-md focus:border-2 focus:border-white"
+            />
+            <input
+              value={celularContacto}
+              onChange={(e) => setCelularContacto(e.target.value)}
+              placeholder="Tu celular"
+              type="tel"
+              required
+              className="w-full rounded-full border border-white/20 bg-black/40 px-4 py-2.5 body-md text-white outline-none backdrop-blur-md focus:border-2 focus:border-white"
+            />
+            {errorContacto && (
+              <p className="body-md text-error" role="alert">
+                {errorContacto}
+              </p>
+            )}
+            <Button type="submit" disabled={guardandoContacto} className="mt-2">
+              {guardandoContacto ? "Guardando…" : "Continuar"}
+            </Button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   // --- Grabando: pantalla blanca e inmersiva, el círculo domina, nada más.
   if (conectado) {
